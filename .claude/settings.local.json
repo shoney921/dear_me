@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "additionalDirectories": [
+      "/Users/ishoney/Documents/dev_2026/03_dear_me/backend/app/{api/v1",
+      "/Users/ishoney/Documents/dev_2026/03_dear_me/frontend/src/{components/{common,diary,persona,chat,ui},pages"
+    ]
+  }
+}
