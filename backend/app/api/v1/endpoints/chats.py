@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_db, get_current_user
+from app.api.deps import get_db, get_current_user
 from app.models.user import User
 from app.models.persona import Persona
 from app.schemas.chat import (
