@@ -27,9 +27,16 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // 401 에러 처리 - 로그인/회원가입 페이지에서는 리다이렉트하지 않음
     if (error.response?.status === 401) {
-      localStorage.removeItem('access_token')
-      window.location.href = '/login'
+      const currentPath = window.location.pathname
+      const isAuthPage = currentPath === '/login' || currentPath === '/register'
+
+      // 인증 페이지가 아닌 곳에서 401 에러 발생 시에만 리다이렉트
+      if (!isAuthPage) {
+        localStorage.removeItem('access_token')
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(error)
   }

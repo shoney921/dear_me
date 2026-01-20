@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import Layout from '@/components/common/Layout'
 import ProtectedRoute from '@/components/common/ProtectedRoute'
+import { PageLoading } from '@/components/ui/Loading'
 
 // Pages
 import HomePage from '@/pages/HomePage'
@@ -16,7 +17,16 @@ import PersonaChatPage from '@/pages/persona/PersonaChatPage'
 import FriendListPage from '@/pages/friend/FriendListPage'
 
 function App() {
-  const { isAuthenticated } = useAuthStore()
+  const { isAuthenticated, isHydrated } = useAuthStore()
+
+  // 아직 localStorage에서 상태 복원 중이면 로딩 표시
+  if (!isHydrated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <PageLoading />
+      </div>
+    )
+  }
 
   return (
     <Routes>

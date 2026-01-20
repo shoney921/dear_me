@@ -19,16 +19,34 @@ export default function RegisterPage() {
   const registerMutation = useMutation({
     mutationFn: authService.register,
     onSuccess: () => {
-      navigate('/login', { state: { message: '회원가입이 완료되었습니다. 로그인해주세요.' } })
+      // 회원가입 성공 시 로그인 페이지로 이동
+      navigate('/login', {
+        state: { message: '회원가입이 완료되었습니다. 로그인해주세요.' },
+        replace: true
+      })
     },
     onError: (err: any) => {
-      setError(err.response?.data?.detail || '회원가입에 실패했습니다.')
+      const detail = err.response?.data?.detail
+      if (typeof detail === 'string') {
+        setError(detail)
+      } else if (Array.isArray(detail)) {
+        // Pydantic validation error
+        setError(detail.map((e: any) => e.msg).join(', '))
+      } else {
+        setError('회원가입에 실패했습니다. 다시 시도해주세요.')
+      }
     },
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+
+    // 클라이언트 측 유효성 검사
+    if (!email.trim() || !username.trim() || !password.trim()) {
+      setError('모든 필드를 입력해주세요.')
+      return
+    }
 
     if (password !== confirmPassword) {
       setError('비밀번호가 일치하지 않습니다.')
@@ -37,6 +55,11 @@ export default function RegisterPage() {
 
     if (password.length < 8) {
       setError('비밀번호는 8자 이상이어야 합니다.')
+      return
+    }
+
+    if (username.length < 2) {
+      setError('사용자명은 2자 이상이어야 합니다.')
       return
     }
 
@@ -68,6 +91,7 @@ export default function RegisterPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                autoComplete="email"
               />
             </div>
             <div className="space-y-2">
@@ -83,6 +107,7 @@ export default function RegisterPage() {
                 required
                 minLength={2}
                 maxLength={50}
+                autoComplete="username"
               />
             </div>
             <div className="space-y-2">
@@ -97,6 +122,7 @@ export default function RegisterPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={8}
+                autoComplete="new-password"
               />
             </div>
             <div className="space-y-2">
@@ -110,6 +136,7 @@ export default function RegisterPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
+                autoComplete="new-password"
               />
             </div>
           </CardContent>
