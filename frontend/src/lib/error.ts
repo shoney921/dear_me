@@ -76,6 +76,12 @@ function translateErrorDetail(detail: string | Array<{ msg: string }> | undefine
     'Already friends': '이미 친구입니다.',
     'Friend request already exists': '이미 친구 요청을 보냈습니다.',
     'Cannot send friend request to yourself': '자기 자신에게는 친구 요청을 보낼 수 없습니다.',
+    'Friend request not found': '친구 요청을 찾을 수 없습니다.',
+    'Friendship not found': '친구 관계를 찾을 수 없습니다.',
+    'You can only view persona of your friends': '친구의 페르소나만 볼 수 있습니다.',
+    'You can only chat with persona of your friends': '친구의 페르소나와만 대화할 수 있습니다.',
+    'Friend does not have a persona yet': '친구가 아직 페르소나를 생성하지 않았습니다.',
+    'Use /personas/me endpoint for your own persona': '내 페르소나는 다른 방법으로 조회해주세요.',
   }
 
   return translations[detail] || detail

@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import or_, and_
 
 from app.core.deps import get_db, get_current_active_user
 from app.models.diary import Diary
 from app.models.persona import Persona
 from app.models.user import User
+from app.models.friendship import Friendship, FriendshipStatus
 from app.schemas.persona import PersonaResponse, PersonaGenerateResponse
 from app.services.persona_service import PersonaService
 
@@ -118,13 +120,40 @@ def get_user_persona(
     current_user: User = Depends(get_current_active_user),
 ):
     """특정 사용자의 페르소나 조회 (친구만 가능)"""
-    # TODO: 친구 관계 확인 로직 추가
+    # 자기 자신의 페르소나는 /me 엔드포인트 사용
+    if user_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Use /personas/me endpoint for your own persona",
+        )
+
+    # 친구 관계 확인
+    friendship = db.query(Friendship).filter(
+        or_(
+            and_(
+                Friendship.requester_id == current_user.id,
+                Friendship.addressee_id == user_id,
+            ),
+            and_(
+                Friendship.requester_id == user_id,
+                Friendship.addressee_id == current_user.id,
+            ),
+        ),
+        Friendship.status == FriendshipStatus.ACCEPTED,
+    ).first()
+
+    if not friendship:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only view persona of your friends",
+        )
+
     persona = db.query(Persona).filter(Persona.user_id == user_id).first()
 
     if not persona:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Persona not found",
+            detail="Friend does not have a persona yet",
         )
 
     return persona

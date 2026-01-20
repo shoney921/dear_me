@@ -26,4 +26,9 @@ export const personaService = {
     const response = await api.get<Persona>(`/personas/${userId}`)
     return response.data
   },
+
+  async getFriendPersona(friendId: number): Promise<Persona> {
+    const response = await api.get<Persona>(`/personas/${friendId}`)
+    return response.data
+  },
 }

@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
+from sqlalchemy import or_, and_
 
 from app.core.deps import get_db, get_current_active_user
 from app.models.chat import PersonaChat, ChatMessage
 from app.models.persona import Persona
 from app.models.user import User
+from app.models.friendship import Friendship, FriendshipStatus
 from app.schemas.chat import (
     ChatCreate,
     ChatResponse,
@@ -36,7 +38,27 @@ def create_chat(
     # 자기 페르소나인지 친구 페르소나인지 확인
     is_own = persona.user_id == current_user.id
 
-    # TODO: 친구 페르소나인 경우 친구 관계 확인
+    # 친구 페르소나인 경우 친구 관계 확인
+    if not is_own:
+        friendship = db.query(Friendship).filter(
+            or_(
+                and_(
+                    Friendship.requester_id == current_user.id,
+                    Friendship.addressee_id == persona.user_id,
+                ),
+                and_(
+                    Friendship.requester_id == persona.user_id,
+                    Friendship.addressee_id == current_user.id,
+                ),
+            ),
+            Friendship.status == FriendshipStatus.ACCEPTED,
+        ).first()
+
+        if not friendship:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only chat with persona of your friends",
+            )
 
     chat = PersonaChat(
         user_id=current_user.id,

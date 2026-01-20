@@ -17,6 +17,12 @@ export const chatService = {
     return response.data
   },
 
+  async createWithFriend(personaId: number): Promise<Chat> {
+    // 백엔드에서 자동으로 is_own_persona를 감지함
+    const response = await api.post<Chat>('/chats', { persona_id: personaId })
+    return response.data
+  },
+
   async sendMessage(chatId: number, content: string): Promise<ChatMessage> {
     const response = await api.post<ChatMessage>(`/chats/${chatId}/messages`, { content })
     return response.data
