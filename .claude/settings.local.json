@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(docker-compose down:*)",
+      "Bash(docker-compose up:*)"
     ]
   }
 }
