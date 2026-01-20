@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { PageLoading } from '@/components/ui/Loading'
 import { cn } from '@/lib/utils'
+import { getApiErrorMessage } from '@/lib/error'
 
 export default function PersonaChatPage() {
   const { chatId } = useParams<{ chatId: string }>()
@@ -16,6 +17,14 @@ export default function PersonaChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+
+  // chatId가 없으면 페르소나 페이지로 리다이렉트
+  useEffect(() => {
+    if (!chatId) {
+      navigate('/persona')
+    }
+  }, [chatId, navigate])
 
   const { data: chat, isLoading } = useQuery({
     queryKey: ['chat', chatId],
@@ -26,8 +35,12 @@ export default function PersonaChatPage() {
   const sendMutation = useMutation({
     mutationFn: (content: string) => chatService.sendMessage(Number(chatId), content),
     onSuccess: () => {
+      setError('')
       queryClient.invalidateQueries({ queryKey: ['chat', chatId] })
       setMessage('')
+    },
+    onError: (err) => {
+      setError(getApiErrorMessage(err))
     },
   })
 
@@ -114,6 +127,11 @@ export default function PersonaChatPage() {
 
       {/* Input */}
       <form onSubmit={handleSubmit} className="border-t pt-4">
+        {error && (
+          <div className="mb-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
         <div className="flex gap-2">
           <Input
             placeholder="메시지를 입력하세요..."

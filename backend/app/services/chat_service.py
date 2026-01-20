@@ -1,5 +1,6 @@
 import json
-from typing import List
+import logging
+from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
@@ -7,6 +8,8 @@ from app.core.config import settings
 from app.constants.prompts import PERSONA_CHAT_PROMPT, FRIEND_PERSONA_CHAT_PROMPT
 from app.models.chat import PersonaChat, ChatMessage
 from app.models.persona import Persona
+
+logger = logging.getLogger(__name__)
 
 
 class ChatService:
@@ -26,6 +29,19 @@ class ChatService:
 
         # 페르소나 정보 가져오기
         persona = self.db.query(Persona).filter(Persona.id == chat.persona_id).first()
+
+        if not persona:
+            logger.error(f"Persona not found for chat {chat.id}")
+            # 기본 응답 반환
+            ai_message = ChatMessage(
+                chat_id=chat.id,
+                content="페르소나를 찾을 수 없어요. 나중에 다시 시도해주세요!",
+                is_user=False,
+            )
+            self.db.add(ai_message)
+            self.db.commit()
+            self.db.refresh(ai_message)
+            return ai_message
 
         # 이전 대화 내역 가져오기 (최근 10개)
         previous_messages = self.db.query(ChatMessage).filter(
@@ -120,7 +136,7 @@ class ChatService:
             return response.choices[0].message.content
 
         except Exception as e:
-            print(f"AI response generation failed: {e}")
+            logger.error(f"AI response generation failed: {e}")
             return self._get_default_response(persona.name)
 
     def _get_default_response(self, persona_name: str) -> str:

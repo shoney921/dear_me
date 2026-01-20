@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { User, MessageCircle, RefreshCw } from 'lucide-react'
@@ -8,10 +9,12 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { PageLoading, Loading } from '@/components/ui/Loading'
 import { MIN_DIARIES_FOR_PERSONA } from '@/lib/constants'
+import { getApiErrorMessage } from '@/lib/error'
 
 export default function PersonaPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [error, setError] = useState('')
 
   const { data: status, isLoading: isLoadingStatus } = useQuery({
     queryKey: ['personaStatus'],
@@ -28,22 +31,38 @@ export default function PersonaPage() {
   const generateMutation = useMutation({
     mutationFn: personaService.generate,
     onSuccess: () => {
+      setError('')
       queryClient.invalidateQueries({ queryKey: ['personaStatus'] })
       queryClient.invalidateQueries({ queryKey: ['myPersona'] })
+    },
+    onError: (err) => {
+      setError(getApiErrorMessage(err))
     },
   })
 
   const regenerateMutation = useMutation({
     mutationFn: personaService.regenerate,
     onSuccess: () => {
+      setError('')
       queryClient.invalidateQueries({ queryKey: ['myPersona'] })
+    },
+    onError: (err) => {
+      setError(getApiErrorMessage(err))
     },
   })
 
   const startChatMutation = useMutation({
-    mutationFn: () => chatService.create(persona!.id),
+    mutationFn: () => {
+      if (!persona) {
+        throw new Error('페르소나가 없습니다.')
+      }
+      return chatService.create(persona.id)
+    },
     onSuccess: (chat) => {
       navigate(`/persona/chat/${chat.id}`)
+    },
+    onError: (err) => {
+      setError(getApiErrorMessage(err))
     },
   })
 
@@ -114,12 +133,19 @@ export default function PersonaPage() {
     )
   }
 
-  // 페르소나가 있는 경우
-  const traits = persona?.traits
-    ? typeof persona.traits === 'string'
-      ? JSON.parse(persona.traits)
-      : persona.traits
-    : []
+  // 페르소나가 있는 경우 - JSON.parse 안전하게 처리
+  let traits: string[] = []
+  if (persona?.traits) {
+    if (typeof persona.traits === 'string') {
+      try {
+        traits = JSON.parse(persona.traits)
+      } catch {
+        traits = []
+      }
+    } else if (Array.isArray(persona.traits)) {
+      traits = persona.traits
+    }
+  }
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -142,6 +168,11 @@ export default function PersonaPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          {error && (
+            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+              {error}
+            </div>
+          )}
           {/* Personality */}
           <div>
             <h3 className="mb-2 font-semibold">성격</h3>

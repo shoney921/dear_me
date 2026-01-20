@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import Optional
 
 from sqlalchemy.orm import Session
@@ -8,6 +9,8 @@ from app.constants.prompts import PERSONA_GENERATION_PROMPT
 from app.models.diary import Diary
 from app.models.persona import Persona
 from app.models.user import User
+
+logger = logging.getLogger(__name__)
 
 
 class PersonaService:
@@ -77,7 +80,7 @@ class PersonaService:
             return json.loads(content)
 
         except Exception as e:
-            print(f"AI generation failed: {e}")
+            logger.error(f"AI generation failed: {e}")
             return self._get_default_persona()
 
     def _get_default_persona(self) -> dict:

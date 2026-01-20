@@ -7,41 +7,10 @@ import { authService } from '@/services/authService'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card'
+import { getApiErrorMessage } from '@/lib/error'
 
 interface LocationState {
   message?: string
-}
-
-// 백엔드 에러 메시지를 한국어로 변환
-function getErrorMessage(error: any): string {
-  // 네트워크 에러
-  if (!error.response) {
-    return '서버에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.'
-  }
-
-  const status = error.response?.status
-  const detail = error.response?.data?.detail
-
-  // 상태 코드별 처리
-  switch (status) {
-    case 401:
-      return '이메일 또는 비밀번호가 올바르지 않습니다.'
-    case 400:
-      if (detail === 'Inactive user') {
-        return '비활성화된 계정입니다. 관리자에게 문의해주세요.'
-      }
-      return detail || '잘못된 요청입니다.'
-    case 422:
-      // Validation error
-      if (Array.isArray(detail)) {
-        return detail.map((e: any) => e.msg).join(', ')
-      }
-      return '입력값이 올바르지 않습니다.'
-    case 500:
-      return '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'
-    default:
-      return detail || '로그인에 실패했습니다. 다시 시도해주세요.'
-  }
 }
 
 export default function LoginPage() {
@@ -78,9 +47,8 @@ export default function LoginPage() {
         localStorage.removeItem('access_token')
       }
     },
-    onError: (err: any) => {
-      const message = getErrorMessage(err)
-      setError(message)
+    onError: (err) => {
+      setError(getApiErrorMessage(err))
     },
   })
 

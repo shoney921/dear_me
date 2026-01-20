@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Trash2, Edit } from 'lucide-react'
+import { ArrowLeft, Trash2 } from 'lucide-react'
 
 import { diaryService } from '@/services/diaryService'
 import { Button } from '@/components/ui/Button'

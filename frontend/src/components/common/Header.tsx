@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { BookOpen, User, Users, MessageCircle, LogOut } from 'lucide-react'
+import { BookOpen, User, Users, LogOut } from 'lucide-react'
 
 import { useAuthStore } from '@/store/authStore'
 import { Button } from '@/components/ui/Button'

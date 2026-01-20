@@ -6,6 +6,7 @@ import { authService } from '@/services/authService'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card'
+import { getApiErrorMessage } from '@/lib/error'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
@@ -25,16 +26,8 @@ export default function RegisterPage() {
         replace: true
       })
     },
-    onError: (err: any) => {
-      const detail = err.response?.data?.detail
-      if (typeof detail === 'string') {
-        setError(detail)
-      } else if (Array.isArray(detail)) {
-        // Pydantic validation error
-        setError(detail.map((e: any) => e.msg).join(', '))
-      } else {
-        setError('회원가입에 실패했습니다. 다시 시도해주세요.')
-      }
+    onError: (err) => {
+      setError(getApiErrorMessage(err))
     },
   })
 

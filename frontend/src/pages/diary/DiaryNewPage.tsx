@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { MOODS, WEATHER } from '@/lib/constants'
+import { getApiErrorMessage } from '@/lib/error'
 
 export default function DiaryNewPage() {
   const navigate = useNavigate()
@@ -17,6 +18,7 @@ export default function DiaryNewPage() {
   const [content, setContent] = useState('')
   const [mood, setMood] = useState<string>('')
   const [weather, setWeather] = useState<string>('')
+  const [error, setError] = useState('')
   const [diaryDate, setDiaryDate] = useState(
     new Date().toISOString().split('T')[0]
   )
@@ -29,10 +31,14 @@ export default function DiaryNewPage() {
       queryClient.invalidateQueries({ queryKey: ['personaStatus'] })
       navigate('/diaries')
     },
+    onError: (err) => {
+      setError(getApiErrorMessage(err))
+    },
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setError('')
     createMutation.mutate({
       title,
       content,
@@ -58,6 +64,11 @@ export default function DiaryNewPage() {
             <CardTitle>오늘 하루는 어땠나요?</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            {error && (
+              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                {error}
+              </div>
+            )}
             {/* Date */}
             <div className="space-y-2">
               <label className="text-sm font-medium">날짜</label>
