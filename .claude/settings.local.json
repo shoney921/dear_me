@@ -10,7 +10,11 @@
       "Bash(npm run build:*)",
       "Bash(npx tsc:*)",
       "Bash(npx typescript:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(grep:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nrefactor\\(auth\\): 중복 로그인 로직을 헬퍼 함수로 추출\n\n- _authenticate_user\\(\\): 사용자 인증 공통 로직\n- _create_token_response\\(\\): 토큰 생성 공통 로직\n- login, login_json 엔드포인트 코드 간소화\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit:*)"
     ]
   }
 }
