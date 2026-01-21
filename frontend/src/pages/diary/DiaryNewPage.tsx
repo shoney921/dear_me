@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ArrowLeft, Lightbulb, RefreshCw } from 'lucide-react'
 
 import { diaryService } from '@/services/diaryService'
 import { Button } from '@/components/ui/Button'
@@ -19,9 +19,16 @@ export default function DiaryNewPage() {
   const [mood, setMood] = useState<string>('')
   const [weather, setWeather] = useState<string>('')
   const [error, setError] = useState('')
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const [diaryDate, setDiaryDate] = useState(
     new Date().toISOString().split('T')[0]
   )
+
+  const { data: suggestions, isLoading: isSuggestionsLoading, refetch: refetchSuggestions } = useQuery({
+    queryKey: ['diaryPromptSuggestions'],
+    queryFn: () => diaryService.getPromptSuggestions(),
+    enabled: showSuggestions,
+  })
 
   const createMutation = useMutation({
     mutationFn: diaryService.create,
@@ -61,9 +68,62 @@ export default function DiaryNewPage() {
       <form onSubmit={handleSubmit}>
         <Card>
           <CardHeader>
-            <CardTitle>오늘 하루는 어땠나요?</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>오늘 하루는 어땠나요?</CardTitle>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowSuggestions(!showSuggestions)}
+              >
+                <Lightbulb className="mr-2 h-4 w-4" />
+                주제 추천
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Prompt Suggestions */}
+            {showSuggestions && (
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-sm font-medium">오늘의 일기 주제</h3>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => refetchSuggestions()}
+                    disabled={isSuggestionsLoading}
+                  >
+                    <RefreshCw className={`h-4 w-4 ${isSuggestionsLoading ? 'animate-spin' : ''}`} />
+                  </Button>
+                </div>
+                {isSuggestionsLoading ? (
+                  <p className="text-sm text-muted-foreground">추천 주제를 생성하는 중...</p>
+                ) : suggestions?.prompts && suggestions.prompts.length > 0 ? (
+                  <div className="space-y-2">
+                    {suggestions.prompts.map((suggestion, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => {
+                          setTitle(suggestion.title)
+                          setContent(suggestion.description + '\n\n')
+                          setShowSuggestions(false)
+                        }}
+                        className="w-full rounded-md border bg-background p-3 text-left transition-colors hover:bg-secondary"
+                      >
+                        <p className="font-medium">{suggestion.title}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {suggestion.description}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">추천 주제를 불러올 수 없습니다.</p>
+                )}
+              </div>
+            )}
             {error && (
               <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
                 {error}

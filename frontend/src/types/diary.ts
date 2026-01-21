@@ -31,3 +31,21 @@ export interface DiaryListResponse {
   page: number
   per_page: number
 }
+
+export interface DiaryStats {
+  total_count: number
+  current_streak: number
+  longest_streak: number
+  mood_distribution: Record<string, number>
+  monthly_count: Record<string, number>
+  weekly_average: number
+}
+
+export interface DiaryPromptSuggestion {
+  title: string
+  description: string
+}
+
+export interface DiaryPromptSuggestionResponse {
+  prompts: DiaryPromptSuggestion[]
+}

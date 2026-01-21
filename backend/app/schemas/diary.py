@@ -38,3 +38,21 @@ class DiaryListResponse(BaseModel):
     total: int
     page: int
     per_page: int
+
+
+class DiaryStats(BaseModel):
+    total_count: int
+    current_streak: int
+    longest_streak: int
+    mood_distribution: dict[str, int]
+    monthly_count: dict[str, int]
+    weekly_average: float
+
+
+class DiaryPromptSuggestion(BaseModel):
+    title: str
+    description: str
+
+
+class DiaryPromptSuggestionResponse(BaseModel):
+    prompts: list[DiaryPromptSuggestion]

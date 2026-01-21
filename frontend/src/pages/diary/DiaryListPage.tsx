@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Plus, BookOpen } from 'lucide-react'
+import { Plus, BookOpen, BarChart3 } from 'lucide-react'
 
 import { diaryService } from '@/services/diaryService'
 import { Button } from '@/components/ui/Button'
@@ -32,12 +32,20 @@ export default function DiaryListPage() {
           <h1 className="text-2xl font-bold">내 일기</h1>
           <p className="text-muted-foreground">총 {data?.total || 0}개의 일기</p>
         </div>
-        <Link to="/diaries/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            일기 쓰기
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link to="/diaries/stats">
+            <Button variant="outline">
+              <BarChart3 className="mr-2 h-4 w-4" />
+              통계
+            </Button>
+          </Link>
+          <Link to="/diaries/new">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              일기 쓰기
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Diary List */}

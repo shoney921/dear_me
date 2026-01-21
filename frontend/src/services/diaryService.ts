@@ -1,5 +1,5 @@
 import api from '@/lib/api'
-import type { Diary, DiaryCreate, DiaryUpdate, DiaryListResponse } from '@/types/diary'
+import type { Diary, DiaryCreate, DiaryUpdate, DiaryListResponse, DiaryStats, DiaryPromptSuggestionResponse } from '@/types/diary'
 
 export const diaryService = {
   async getList(page = 1, perPage = 10, mood?: string): Promise<DiaryListResponse> {
@@ -34,6 +34,16 @@ export const diaryService = {
 
   async getCount(): Promise<{ count: number }> {
     const response = await api.get<{ count: number }>('/diaries/count')
+    return response.data
+  },
+
+  async getStats(): Promise<DiaryStats> {
+    const response = await api.get<DiaryStats>('/diaries/stats')
+    return response.data
+  },
+
+  async getPromptSuggestions(): Promise<DiaryPromptSuggestionResponse> {
+    const response = await api.get<DiaryPromptSuggestionResponse>('/diaries/prompt-suggestions')
     return response.data
   },
 }

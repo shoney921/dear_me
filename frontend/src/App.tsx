@@ -12,6 +12,7 @@ import RegisterPage from '@/pages/RegisterPage'
 import DiaryListPage from '@/pages/diary/DiaryListPage'
 import DiaryNewPage from '@/pages/diary/DiaryNewPage'
 import DiaryDetailPage from '@/pages/diary/DiaryDetailPage'
+import DiaryStatsPage from '@/pages/diary/DiaryStatsPage'
 import PersonaPage from '@/pages/persona/PersonaPage'
 import PersonaChatPage from '@/pages/persona/PersonaChatPage'
 import FriendListPage from '@/pages/friend/FriendListPage'
@@ -46,6 +47,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/diaries" element={<DiaryListPage />} />
           <Route path="/diaries/new" element={<DiaryNewPage />} />
+          <Route path="/diaries/stats" element={<DiaryStatsPage />} />
           <Route path="/diaries/:id" element={<DiaryDetailPage />} />
           <Route path="/persona" element={<PersonaPage />} />
           <Route path="/persona/chat" element={<PersonaChatPage />} />
