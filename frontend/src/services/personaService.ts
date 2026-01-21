@@ -1,5 +1,12 @@
 import api from '@/lib/api'
-import type { Persona, PersonaStatus, PersonaGenerateResponse } from '@/types/persona'
+import type {
+  Persona,
+  PersonaStatus,
+  PersonaGenerateResponse,
+  PersonaUpdateRequest,
+  PersonaCustomizeRequest,
+  PersonaCustomizeResponse,
+} from '@/types/persona'
 
 export const personaService = {
   async getMyPersona(): Promise<Persona> {
@@ -19,6 +26,16 @@ export const personaService = {
 
   async regenerate(): Promise<PersonaGenerateResponse> {
     const response = await api.post<PersonaGenerateResponse>('/personas/regenerate')
+    return response.data
+  },
+
+  async update(data: PersonaUpdateRequest): Promise<Persona> {
+    const response = await api.put<Persona>('/personas/me', data)
+    return response.data
+  },
+
+  async customize(data: PersonaCustomizeRequest): Promise<PersonaCustomizeResponse> {
+    const response = await api.put<PersonaCustomizeResponse>('/personas/me/customize', data)
     return response.data
   },
 

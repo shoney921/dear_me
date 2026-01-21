@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { User, MessageCircle, RefreshCw } from 'lucide-react'
+import { User, MessageCircle, RefreshCw, Settings, Palette } from 'lucide-react'
 
 import { personaService } from '@/services/personaService'
 import { chatService } from '@/services/chatService'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { PageLoading, Loading } from '@/components/ui/Loading'
+import { PersonaSettingsModal } from '@/components/persona/PersonaSettingsModal'
+import { PersonaCustomizeModal } from '@/components/persona/PersonaCustomizeModal'
 import { MIN_DIARIES_FOR_PERSONA } from '@/lib/constants'
 import { getApiErrorMessage } from '@/lib/error'
 
@@ -15,6 +17,8 @@ export default function PersonaPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [error, setError] = useState('')
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [isCustomizeOpen, setIsCustomizeOpen] = useState(false)
 
   const { data: status, isLoading: isLoadingStatus } = useQuery({
     queryKey: ['personaStatus'],
@@ -155,16 +159,39 @@ export default function PersonaPage() {
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
               {persona?.name}
+              {!persona?.is_public && (
+                <span className="ml-2 rounded bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
+                  비공개
+                </span>
+              )}
             </CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => regenerateMutation.mutate()}
-              disabled={regenerateMutation.isPending}
-            >
-              <RefreshCw className={`mr-2 h-4 w-4 ${regenerateMutation.isPending ? 'animate-spin' : ''}`} />
-              재생성
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsSettingsOpen(true)}
+                title="설정"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsCustomizeOpen(true)}
+                title="커스터마이징"
+              >
+                <Palette className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => regenerateMutation.mutate()}
+                disabled={regenerateMutation.isPending}
+                title="재생성"
+              >
+                <RefreshCw className={`h-4 w-4 ${regenerateMutation.isPending ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -204,6 +231,55 @@ export default function PersonaPage() {
             </div>
           )}
 
+          {/* Customization Info */}
+          {persona?.customization && (
+            <div className="rounded-lg bg-secondary/50 p-4">
+              <h3 className="mb-3 font-semibold">커스터마이징 설정</h3>
+              <div className="space-y-2 text-sm">
+                {persona.customization.speaking_style_tone && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">말투 스타일</span>
+                    <span>
+                      {persona.customization.speaking_style_tone === 'formal' && '정중한'}
+                      {persona.customization.speaking_style_tone === 'casual' && '친근한'}
+                      {persona.customization.speaking_style_tone === 'cute' && '귀여운'}
+                    </span>
+                  </div>
+                )}
+                {persona.customization.speaking_style_emoji !== undefined && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">이모지 사용</span>
+                    <span>{persona.customization.speaking_style_emoji ? '사용' : '미사용'}</span>
+                  </div>
+                )}
+                {persona.customization.custom_greeting && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">인사말</span>
+                    <span className="max-w-[200px] truncate">
+                      {persona.customization.custom_greeting}
+                    </span>
+                  </div>
+                )}
+                {persona.customization.personality_traits_override &&
+                  persona.customization.personality_traits_override.length > 0 && (
+                    <div>
+                      <span className="text-muted-foreground">커스텀 특성</span>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {persona.customization.personality_traits_override.map((trait, i) => (
+                          <span
+                            key={i}
+                            className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary"
+                          >
+                            {trait}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+              </div>
+            </div>
+          )}
+
           {/* Chat Button */}
           <Button
             className="w-full"
@@ -215,6 +291,22 @@ export default function PersonaPage() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Modals */}
+      {persona && (
+        <>
+          <PersonaSettingsModal
+            isOpen={isSettingsOpen}
+            onClose={() => setIsSettingsOpen(false)}
+            persona={persona}
+          />
+          <PersonaCustomizeModal
+            isOpen={isCustomizeOpen}
+            onClose={() => setIsCustomizeOpen(false)}
+            persona={persona}
+          />
+        </>
+      )}
     </div>
   )
 }

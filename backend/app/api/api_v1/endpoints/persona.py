@@ -1,3 +1,5 @@
+import json
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
@@ -7,12 +9,37 @@ from app.models.diary import Diary
 from app.models.persona import Persona
 from app.models.user import User
 from app.models.friendship import Friendship, FriendshipStatus
-from app.schemas.persona import PersonaResponse, PersonaGenerateResponse
+from app.schemas.persona import (
+    PersonaResponse,
+    PersonaGenerateResponse,
+    PersonaUpdateRequest,
+    PersonaCustomizeRequest,
+    PersonaCustomizeResponse,
+    PersonaCustomization,
+)
 from app.services.persona_service import PersonaService
 
 router = APIRouter()
 
 MIN_DIARIES_FOR_PERSONA = 7
+
+
+def _parse_persona_response(persona: Persona) -> dict:
+    """페르소나 응답 데이터 파싱 헬퍼"""
+    data = {
+        "id": persona.id,
+        "user_id": persona.user_id,
+        "name": persona.name,
+        "personality": persona.personality,
+        "traits": json.loads(persona.traits) if persona.traits else None,
+        "speaking_style": persona.speaking_style,
+        "avatar_url": persona.avatar_url,
+        "is_public": persona.is_public if persona.is_public is not None else True,
+        "customization": json.loads(persona.customization) if persona.customization else None,
+        "created_at": persona.created_at,
+        "updated_at": persona.updated_at,
+    }
+    return data
 
 
 @router.get("/me", response_model=PersonaResponse)
@@ -29,7 +56,78 @@ def get_my_persona(
             detail="Persona not found. Write at least 7 diaries to generate your persona.",
         )
 
-    return persona
+    return _parse_persona_response(persona)
+
+
+@router.put("/me", response_model=PersonaResponse)
+def update_my_persona(
+    request: PersonaUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """내 페르소나 설정 수정 (이름, 공개 여부)"""
+    persona = db.query(Persona).filter(Persona.user_id == current_user.id).first()
+
+    if not persona:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Persona not found.",
+        )
+
+    # 수정할 필드만 업데이트
+    if request.name is not None:
+        persona.name = request.name
+    if request.is_public is not None:
+        persona.is_public = request.is_public
+
+    db.commit()
+    db.refresh(persona)
+
+    return _parse_persona_response(persona)
+
+
+@router.put("/me/customize", response_model=PersonaCustomizeResponse)
+def customize_my_persona(
+    request: PersonaCustomizeRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """내 페르소나 커스터마이징 (말투, 성격 등 세부 조정)"""
+    persona = db.query(Persona).filter(Persona.user_id == current_user.id).first()
+
+    if not persona:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Persona not found.",
+        )
+
+    # 기존 커스터마이징 설정 로드
+    existing_customization = {}
+    if persona.customization:
+        try:
+            existing_customization = json.loads(persona.customization)
+        except json.JSONDecodeError:
+            existing_customization = {}
+
+    # 요청된 필드만 업데이트
+    if request.speaking_style_tone is not None:
+        existing_customization["speaking_style_tone"] = request.speaking_style_tone
+    if request.speaking_style_emoji is not None:
+        existing_customization["speaking_style_emoji"] = request.speaking_style_emoji
+    if request.personality_traits_override is not None:
+        existing_customization["personality_traits_override"] = request.personality_traits_override
+    if request.custom_greeting is not None:
+        existing_customization["custom_greeting"] = request.custom_greeting
+
+    persona.customization = json.dumps(existing_customization, ensure_ascii=False)
+    db.commit()
+    db.refresh(persona)
+
+    return {
+        "id": persona.id,
+        "customization": existing_customization,
+        "updated_at": persona.updated_at,
+    }
 
 
 @router.post("/generate", response_model=PersonaGenerateResponse)
@@ -156,4 +254,11 @@ def get_user_persona(
             detail="Friend does not have a persona yet",
         )
 
-    return persona
+    # 비공개 페르소나 접근 제한
+    if persona.is_public is False:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This persona is private",
+        )
+
+    return _parse_persona_response(persona)

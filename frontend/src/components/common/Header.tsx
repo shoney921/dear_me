@@ -1,7 +1,9 @@
 import { Link, useLocation } from 'react-router-dom'
-import { BookOpen, User, Users, LogOut } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { BookOpen, User, Users, LogOut, Bell } from 'lucide-react'
 
 import { useAuthStore } from '@/store/authStore'
+import { notificationService } from '@/services/notificationService'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 
@@ -15,6 +17,14 @@ const navItems = [
 export default function Header() {
   const location = useLocation()
   const { user, logout } = useAuthStore()
+
+  const { data: unreadData } = useQuery({
+    queryKey: ['notificationUnreadCount'],
+    queryFn: notificationService.getUnreadCount,
+    refetchInterval: 30000, // 30초마다 갱신
+  })
+
+  const unreadCount = unreadData?.unread_count ?? 0
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -48,6 +58,16 @@ export default function Header() {
 
         {/* User Menu */}
         <div className="flex items-center gap-2">
+          <Link to="/notifications">
+            <Button variant="ghost" size="icon" className="relative" title="알림">
+              <Bell className="h-4 w-4" />
+              {unreadCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </Button>
+          </Link>
           <span className="text-sm text-muted-foreground hidden sm:inline">
             {user?.username}
           </span>

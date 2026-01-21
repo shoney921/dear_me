@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -18,6 +18,11 @@ class Persona(Base):
     traits = Column(Text, nullable=True)  # JSON 형태의 특성 목록
     speaking_style = Column(Text, nullable=True)  # 말투 스타일
     avatar_url = Column(String(500), nullable=True)
+    is_public = Column(Boolean, default=True)  # 친구에게 공개 여부
+
+    # 커스터마이징 설정 (JSON 형태로 저장)
+    customization = Column(Text, nullable=True)  # JSON: tone, emoji, traits_override, greeting
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
