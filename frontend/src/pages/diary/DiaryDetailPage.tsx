@@ -49,6 +49,9 @@ export default function DiaryDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['diaryCount'] })
       navigate('/diaries')
     },
+    onError: (err) => {
+      setError(getApiErrorMessage(err))
+    },
   })
 
   const updateMutation = useMutation({
