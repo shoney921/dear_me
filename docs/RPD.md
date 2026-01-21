@@ -383,45 +383,61 @@ CREATE TABLE chat_messages (
 
 | Method | Endpoint | 설명 | Request Body | Response |
 |--------|----------|------|-------------|----------|
-| POST | `/api/v1/diaries` | 일기 작성 | `{content, mood?, weather?, date?, is_private?}` | `Diary` |
-| GET | `/api/v1/diaries` | 목록 조회 | Query: `?year=&month=&page=&limit=` | `Diary[]` |
+| POST | `/api/v1/diaries` | 일기 작성 | `{title, content, mood?, weather?, diary_date?}` | `Diary` |
+| GET | `/api/v1/diaries` | 목록 조회 | Query: `?year=&month=&page=&per_page=` | `Diary[]` |
 | GET | `/api/v1/diaries/{id}` | 상세 조회 | - | `Diary` |
-| PUT | `/api/v1/diaries/{id}` | 수정 | `{content?, mood?, weather?, is_private?}` | `Diary` |
-| DELETE | `/api/v1/diaries/{id}` | 삭제 | - | `{success: true}` |
-| GET | `/api/v1/diaries/date/{date}` | 특정 날짜 조회 | - | `Diary` |
-| GET | `/api/v1/diaries/stats` | 통계 조회 | - | `{total, streak, moods}` |
+| PATCH | `/api/v1/diaries/{id}` | 수정 | `{title?, content?, mood?, weather?}` | `Diary` |
+| DELETE | `/api/v1/diaries/{id}` | 삭제 | - | 204 No Content |
+| GET | `/api/v1/diaries/count` | 일기 개수 조회 | - | `{count}` |
+| GET | `/api/v1/diaries/stats` | 통계 조회 | - | `{total_count, current_streak, longest_streak, mood_distribution, monthly_count}` |
+| GET | `/api/v1/diaries/prompt-suggestions` | AI 일기 주제 제안 | - | `{suggestions[]}` |
 
 ### 페르소나 API
 
 | Method | Endpoint | 설명 | Request Body | Response |
 |--------|----------|------|-------------|----------|
-| POST | `/api/v1/personas/generate` | 생성/재생성 | `{force_regenerate?}` | `Persona` |
 | GET | `/api/v1/personas/me` | 내 페르소나 조회 | - | `Persona` |
 | PUT | `/api/v1/personas/me` | 설정 수정 | `{name?, is_public?}` | `Persona` |
+| PUT | `/api/v1/personas/me/customize` | 커스터마이징 | `{speaking_style_tone?, emoji_usage?, traits_override?}` | `Persona` |
+| GET | `/api/v1/personas/status` | 생성 가능 상태 | - | `{can_generate, diary_count, required_count}` |
+| POST | `/api/v1/personas/generate` | 페르소나 생성 | - | `Persona` |
+| POST | `/api/v1/personas/regenerate` | 페르소나 재생성 | - | `Persona` |
 | GET | `/api/v1/personas/{user_id}` | 친구 페르소나 조회 | - | `Persona (제한적)` |
 
 ### 친구 API
 
 | Method | Endpoint | 설명 |
 |--------|----------|------|
-| POST | `/api/v1/friends/request` | 친구 요청 (`{email}`) |
-| POST | `/api/v1/friends/accept/{user_id}` | 친구 수락 |
-| POST | `/api/v1/friends/reject/{user_id}` | 친구 거절 |
-| DELETE | `/api/v1/friends/{user_id}` | 친구 삭제 |
 | GET | `/api/v1/friends` | 친구 목록 |
-| GET | `/api/v1/friends/requests` | 받은 요청 목록 |
-| GET | `/api/v1/users/search` | 사용자 검색 (`?q=`) |
+| POST | `/api/v1/friends/request` | 친구 요청 (`{addressee_id}`) |
+| GET | `/api/v1/friends/requests/received` | 받은 친구 요청 목록 |
+| GET | `/api/v1/friends/requests/sent` | 보낸 친구 요청 목록 |
+| PATCH | `/api/v1/friends/requests/{id}` | 친구 요청 수락/거절 (`{status: "accepted" | "rejected"}`) |
+| DELETE | `/api/v1/friends/{friend_id}` | 친구 삭제 |
+| GET | `/api/v1/users/search/{username}` | 사용자 검색 |
 
 ### 대화 API
 
 | Method | Endpoint | 설명 |
 |--------|----------|------|
-| POST | `/api/v1/chats/persona/{persona_id}` | 새 대화 시작 |
 | GET | `/api/v1/chats` | 대화 목록 |
+| POST | `/api/v1/chats` | 새 대화 시작 (`{persona_id}`) |
 | GET | `/api/v1/chats/{chat_id}` | 대화 상세 (메시지 포함) |
-| POST | `/api/v1/chats/{chat_id}/messages` | 메시지 전송 |
-| POST | `/api/v1/chats/{chat_id}/messages/stream` | 메시지 전송 (스트리밍) |
+| GET | `/api/v1/chats/{chat_id}/messages` | 대화 메시지 조회 |
+| POST | `/api/v1/chats/{chat_id}/messages` | 메시지 전송 (`{content}`) |
 | DELETE | `/api/v1/chats/{chat_id}` | 대화 삭제 |
+
+### 알림 API
+
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/api/v1/notifications` | 알림 목록 조회 (Query: `?skip=&limit=&unread_only=`) |
+| GET | `/api/v1/notifications/unread-count` | 읽지 않은 알림 개수 |
+| GET | `/api/v1/notifications/{id}` | 알림 상세 조회 |
+| PATCH | `/api/v1/notifications/{id}/read` | 알림 읽음 처리 |
+| POST | `/api/v1/notifications/mark-read` | 여러 알림 읽음 처리 (`{notification_ids[]}`) |
+| POST | `/api/v1/notifications/mark-all-read` | 모든 알림 읽음 처리 |
+| DELETE | `/api/v1/notifications/{id}` | 알림 삭제 |
 
 ---
 

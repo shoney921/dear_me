@@ -95,13 +95,18 @@
 | GET | `/api/v1/diaries` | 일기 목록 조회 |
 | POST | `/api/v1/diaries` | 일기 작성 |
 | GET | `/api/v1/diaries/{id}` | 일기 상세 조회 |
+| PATCH | `/api/v1/diaries/{id}` | 일기 수정 |
 | DELETE | `/api/v1/diaries/{id}` | 일기 삭제 |
 | GET | `/api/v1/diaries/count` | 일기 개수 조회 |
+| GET | `/api/v1/diaries/stats` | 일기 통계 조회 |
+| GET | `/api/v1/diaries/prompt-suggestions` | AI 일기 주제 제안 |
 
 ### 페르소나 (Persona)
 | Method | Endpoint | 설명 |
 |--------|----------|------|
 | GET | `/api/v1/personas/me` | 내 페르소나 조회 |
+| PUT | `/api/v1/personas/me` | 내 페르소나 설정 수정 |
+| PUT | `/api/v1/personas/me/customize` | 페르소나 커스터마이징 |
 | GET | `/api/v1/personas/status` | 페르소나 생성 가능 상태 |
 | POST | `/api/v1/personas/generate` | 페르소나 생성 |
 | POST | `/api/v1/personas/regenerate` | 페르소나 재생성 |
@@ -123,8 +128,20 @@
 | GET | `/api/v1/chats` | 채팅 목록 |
 | POST | `/api/v1/chats` | 채팅 생성 |
 | GET | `/api/v1/chats/{id}` | 채팅 상세 (메시지 포함) |
+| GET | `/api/v1/chats/{id}/messages` | 채팅 메시지 조회 |
 | POST | `/api/v1/chats/{id}/messages` | 메시지 전송 |
 | DELETE | `/api/v1/chats/{id}` | 채팅 삭제 |
+
+### 알림 (Notification)
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/api/v1/notifications` | 알림 목록 조회 |
+| GET | `/api/v1/notifications/unread-count` | 읽지 않은 알림 개수 |
+| GET | `/api/v1/notifications/{id}` | 알림 상세 조회 |
+| PATCH | `/api/v1/notifications/{id}/read` | 알림 읽음 처리 |
+| POST | `/api/v1/notifications/mark-read` | 여러 알림 읽음 처리 |
+| POST | `/api/v1/notifications/mark-all-read` | 모든 알림 읽음 처리 |
+| DELETE | `/api/v1/notifications/{id}` | 알림 삭제 |
 
 ---
 
@@ -331,11 +348,18 @@ raise HTTPException(status_code=400, detail="Error message")
 - [x] 친구 페르소나 대화
 - [x] 사용자 검색
 
-### Phase 3: 고도화 (예정)
-- [ ] 일기 통계/인사이트
-- [ ] 알림 기능
-- [ ] 페르소나 꾸미기
-- [ ] 일기 수정 기능
+### Phase 3: 고도화 (완료)
+- [x] 일기 통계/인사이트
+- [x] 알림 기능
+- [x] 페르소나 커스터마이징
+- [x] 일기 수정 기능
+- [x] AI 일기 프롬프트 제안
+
+### Phase 4: 수익화 (예정)
+- [ ] 멀티모달 캐릭터 생성
+- [ ] 캐릭터 스타일 변경
+- [ ] 프리미엄 구독 시스템
+- [ ] 굿즈 제작 연동
 
 ---
 
