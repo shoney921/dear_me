@@ -28,12 +28,12 @@ def get_notifications(
     query = db.query(Notification).filter(Notification.user_id == current_user.id)
 
     if unread_only:
-        query = query.filter(Notification.is_read == False)
+        query = query.filter(Notification.is_read.is_(False))
 
     total_count = query.count()
     unread_count = (
         db.query(Notification)
-        .filter(Notification.user_id == current_user.id, Notification.is_read == False)
+        .filter(Notification.user_id == current_user.id, Notification.is_read.is_(False))
         .count()
     )
 
@@ -56,7 +56,7 @@ def get_unread_count(
     """읽지 않은 알림 개수 조회"""
     count = (
         db.query(Notification)
-        .filter(Notification.user_id == current_user.id, Notification.is_read == False)
+        .filter(Notification.user_id == current_user.id, Notification.is_read.is_(False))
         .count()
     )
 
@@ -148,7 +148,7 @@ def mark_all_notifications_read(
         db.query(Notification)
         .filter(
             Notification.user_id == current_user.id,
-            Notification.is_read == False,
+            Notification.is_read.is_(False),
         )
         .update({"is_read": True}, synchronize_session=False)
     )
@@ -182,5 +182,3 @@ def delete_notification(
 
     db.delete(notification)
     db.commit()
-
-    return None

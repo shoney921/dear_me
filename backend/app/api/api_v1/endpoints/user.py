@@ -69,7 +69,7 @@ def search_users(
     users = db.query(User).filter(
         User.username.ilike(f"%{username}%"),
         User.id != current_user.id,
-        User.is_active == True,
+        User.is_active.is_(True),
     ).limit(20).all()
 
     return users

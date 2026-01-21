@@ -87,7 +87,7 @@ class ChatService:
         if isinstance(traits, str):
             try:
                 traits = json.loads(traits)
-            except:
+            except (json.JSONDecodeError, TypeError):
                 traits = [traits]
         traits_str = ", ".join(traits) if isinstance(traits, list) else str(traits)
 
