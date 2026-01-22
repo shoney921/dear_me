@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/Input'
 import { Switch } from '@/components/ui/Switch'
 import { Loading } from '@/components/ui/Loading'
 import { getApiErrorMessage } from '@/lib/error'
-import type { Persona, PersonaCustomizeRequest, PersonaCustomization } from '@/types/persona'
+import type { Persona, PersonaCustomizeRequest } from '@/types/persona'
 
 interface PersonaCustomizeModalProps {
   isOpen: boolean

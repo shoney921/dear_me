@@ -212,25 +212,32 @@ class CharacterService:
     def check_can_generate(self, user: User) -> dict:
         """캐릭터 생성 가능 상태 확인"""
         diary_count = self.db.query(Diary).filter(Diary.user_id == user.id).count()
+        has_persona = self.db.query(Persona).filter(Persona.user_id == user.id).first() is not None
         character = self.db.query(Character).filter(
             Character.user_id == user.id
         ).first()
 
-        can_generate = diary_count >= MIN_DIARIES_FOR_CHARACTER
+        has_enough_diaries = diary_count >= MIN_DIARIES_FOR_CHARACTER
         has_character = character is not None
+
+        # 캐릭터 생성 조건: 일기 7개 이상 + 페르소나 있음 + 캐릭터 없음
+        can_generate = has_enough_diaries and has_persona and not has_character
 
         can_evolve = False
         next_evolution_at = None
 
         if character:
-            expected_generation = (diary_count // EVOLUTION_DIARY_INTERVAL) + 1
-            can_evolve = character.generation_count < expected_generation
+            # 진화 조건: 일기 수가 (현재 세대 * 30)개 이상일 때
+            # 예: 1세대 캐릭터 + 일기 30개 이상 → 2세대 진화 가능
+            next_evolution_threshold = character.generation_count * EVOLUTION_DIARY_INTERVAL
+            can_evolve = diary_count >= next_evolution_threshold
             if not can_evolve:
-                next_evolution_at = (character.generation_count * EVOLUTION_DIARY_INTERVAL) - diary_count + EVOLUTION_DIARY_INTERVAL
+                next_evolution_at = next_evolution_threshold - diary_count
 
         return {
-            "can_generate": can_generate and not has_character,
+            "can_generate": can_generate,
             "has_character": has_character,
+            "has_persona": has_persona,
             "diary_count": diary_count,
             "required_diary_count": MIN_DIARIES_FOR_CHARACTER,
             "can_evolve": can_evolve,

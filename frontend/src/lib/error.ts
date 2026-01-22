@@ -82,6 +82,21 @@ function translateErrorDetail(detail: string | Array<{ msg: string }> | undefine
     'You can only chat with persona of your friends': '친구의 페르소나와만 대화할 수 있습니다.',
     'Friend does not have a persona yet': '친구가 아직 페르소나를 생성하지 않았습니다.',
     'Use /personas/me endpoint for your own persona': '내 페르소나는 다른 방법으로 조회해주세요.',
+    // 구독 관련
+    'Subscription not found': '구독 정보를 찾을 수 없습니다.',
+    'Cannot cancel free plan': '무료 플랜은 취소할 수 없습니다.',
+    'Premium subscription required for this feature': '이 기능은 프리미엄 구독이 필요합니다.',
+    'Premium subscription required for this style': '이 스타일은 프리미엄 구독이 필요합니다.',
+    // 캐릭터 관련
+    'Character not found': '캐릭터를 찾을 수 없습니다.',
+    'Character not found.': '캐릭터를 찾을 수 없습니다.',
+    'Character not found. Generate your character first.': '캐릭터를 찾을 수 없습니다. 먼저 캐릭터를 생성해주세요.',
+    'Character already exists. Use style change or evolution.': '이미 캐릭터가 존재합니다. 스타일 변경이나 진화를 이용해주세요.',
+    'Persona not found. Generate persona first.': '페르소나를 찾을 수 없습니다. 먼저 페르소나를 생성해주세요.',
+    'Not eligible for evolution yet': '아직 진화할 수 없습니다. 일기를 더 작성해주세요.',
+    'Friend does not have a character yet': '친구가 아직 캐릭터를 생성하지 않았습니다.',
+    'Use /characters/me endpoint for your own character': '내 캐릭터는 다른 방법으로 조회해주세요.',
+    'You can only view characters of your friends': '친구의 캐릭터만 볼 수 있습니다.',
   }
 
   return translations[detail] || detail

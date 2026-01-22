@@ -36,6 +36,7 @@ export interface CharacterStyleChangeRequest {
 export interface CharacterGenerationStatus {
   can_generate: boolean
   has_character: boolean
+  has_persona: boolean
   diary_count: number
   required_diary_count: number
   can_evolve: boolean

@@ -63,6 +63,7 @@ class CharacterGenerationStatus(BaseModel):
     """캐릭터 생성 가능 상태"""
     can_generate: bool
     has_character: bool
+    has_persona: bool = False  # 페르소나 유무 (캐릭터 생성 전제조건)
     diary_count: int
     required_diary_count: int = 7
     can_evolve: bool = False  # 30개 단위 진화 가능 여부
