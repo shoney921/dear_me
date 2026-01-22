@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { BookOpen, User, Users, LogOut, Bell, Sparkles, Crown } from 'lucide-react'
+import { BookOpen, User, Users, LogOut, Bell, Sparkles, Crown, House } from 'lucide-react'
 
 import { useAuthStore } from '@/store/authStore'
 import { notificationService } from '@/services/notificationService'
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 
 const navItems = [
-  { path: '/', label: '홈', icon: BookOpen },
+  { path: '/', label: '홈', icon: House },
   { path: '/diaries', label: '일기', icon: BookOpen },
   { path: '/persona', label: '페르소나', icon: User },
   { path: '/character', label: '캐릭터', icon: Sparkles },
