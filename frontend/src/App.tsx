@@ -17,6 +17,8 @@ import PersonaPage from '@/pages/persona/PersonaPage'
 import PersonaChatPage from '@/pages/persona/PersonaChatPage'
 import FriendListPage from '@/pages/friend/FriendListPage'
 import NotificationListPage from '@/pages/notification/NotificationListPage'
+import PremiumPage from '@/pages/premium/PremiumPage'
+import CharacterPage from '@/pages/character/CharacterPage'
 
 function App() {
   const { isAuthenticated, isHydrated } = useAuthStore()
@@ -55,6 +57,8 @@ function App() {
           <Route path="/persona/chat/:chatId" element={<PersonaChatPage />} />
           <Route path="/friends" element={<FriendListPage />} />
           <Route path="/notifications" element={<NotificationListPage />} />
+          <Route path="/premium" element={<PremiumPage />} />
+          <Route path="/character" element={<CharacterPage />} />
         </Route>
       </Route>
 
