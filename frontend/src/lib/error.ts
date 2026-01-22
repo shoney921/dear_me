@@ -93,6 +93,7 @@ function translateErrorDetail(detail: string | Array<{ msg: string }> | undefine
     'Character not found. Generate your character first.': '캐릭터를 찾을 수 없습니다. 먼저 캐릭터를 생성해주세요.',
     'Character already exists. Use style change or evolution.': '이미 캐릭터가 존재합니다. 스타일 변경이나 진화를 이용해주세요.',
     'Persona not found. Generate persona first.': '페르소나를 찾을 수 없습니다. 먼저 페르소나를 생성해주세요.',
+    'Need at least 7 diaries': '캐릭터 생성을 위해 최소 7개의 일기가 필요합니다.',
     'Not eligible for evolution yet': '아직 진화할 수 없습니다. 일기를 더 작성해주세요.',
     'Friend does not have a character yet': '친구가 아직 캐릭터를 생성하지 않았습니다.',
     'Use /characters/me endpoint for your own character': '내 캐릭터는 다른 방법으로 조회해주세요.',
