@@ -1,5 +1,7 @@
 import axios from 'axios'
 
+import { queryClient } from './queryClient'
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 export const api = axios.create({
@@ -35,6 +37,8 @@ api.interceptors.response.use(
       // 인증 페이지가 아닌 곳에서 401 에러 발생 시에만 리다이렉트
       if (!isAuthPage) {
         localStorage.removeItem('access_token')
+        // TanStack Query 캐시 초기화
+        queryClient.clear()
         window.location.href = '/login'
       }
     }

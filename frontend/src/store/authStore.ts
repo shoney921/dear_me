@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 
+import { queryClient } from '@/lib/queryClient'
 import type { User } from '@/types/auth'
 
 interface AuthState {
@@ -29,6 +30,8 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         localStorage.removeItem('access_token')
+        // TanStack Query 캐시 전체 초기화 (이전 사용자 데이터 제거)
+        queryClient.clear()
         set({ user: null, token: null, isAuthenticated: false })
       },
 
