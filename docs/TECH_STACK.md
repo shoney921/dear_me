@@ -65,7 +65,7 @@ httpx==0.25.2
     "@tanstack/react-query": "^5.12.2",
     "zustand": "^4.4.7",
     "axios": "^1.6.2",
-    "lucide-react": "^0.294.0",
+    "lucide-react": "^0.562.0",
     "clsx": "^2.0.0",
     "tailwind-merge": "^2.0.0",
     "react-markdown": "^9.0.1",
@@ -99,7 +99,7 @@ httpx==0.25.2
 | @tanstack/react-query | 5.12.2 | 서버 상태 관리, 데이터 페칭/캐싱 |
 | zustand | 4.4.7 | 클라이언트 상태 관리 |
 | axios | 1.6.2 | HTTP 클라이언트 |
-| lucide-react | 0.294.0 | 아이콘 라이브러리 |
+| lucide-react | 0.562.0 | 아이콘 라이브러리 |
 | react-markdown | 9.0.1 | Markdown 렌더링 |
 | react-calendar | 4.8.0 | 캘린더 컴포넌트 |
 | typescript | 5.2.2 | 타입 안정성 |
