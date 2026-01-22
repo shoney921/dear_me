@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Generator, Optional
 
 from fastapi import Depends, HTTPException, status
@@ -7,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
 from app.core.security import decode_access_token
 from app.models.user import User
+from app.models.subscription import Subscription, SubscriptionPlan, SubscriptionStatus
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
@@ -56,3 +58,36 @@ def get_current_active_user(
             detail="Inactive user",
         )
     return current_user
+
+
+def check_premium_subscription(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> bool:
+    """프리미엄 구독 여부 확인 (의존성)"""
+    subscription = db.query(Subscription).filter(
+        Subscription.user_id == current_user.id
+    ).first()
+
+    if not subscription:
+        return False
+
+    is_premium = (
+        subscription.plan == SubscriptionPlan.PREMIUM
+        and subscription.status == SubscriptionStatus.ACTIVE
+        and (subscription.expires_at is None or subscription.expires_at > datetime.utcnow())
+    )
+
+    return is_premium
+
+
+def require_premium(
+    is_premium: bool = Depends(check_premium_subscription),
+) -> bool:
+    """프리미엄 구독 필수 (의존성)"""
+    if not is_premium:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Premium subscription required for this feature",
+        )
+    return is_premium
