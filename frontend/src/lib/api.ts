@@ -2,7 +2,9 @@ import axios from 'axios'
 
 import { queryClient } from './queryClient'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+// 프로덕션: 빈 문자열 = 상대 경로 사용 (/api/v1)
+// 개발: localhost:8000
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
 export const api = axios.create({
   baseURL: `${API_BASE_URL}/api/v1`,
