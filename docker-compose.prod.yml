@@ -1,0 +1,82 @@
+# ============================================
+# DearMe 프로덕션용 Docker Compose
+# ============================================
+# 사용법:
+#   1. .env.production.example을 .env.production으로 복사
+#   2. .env.production 파일에 실제 값 입력
+#   3. docker-compose -f docker-compose.prod.yml --env-file .env.production up -d
+# ============================================
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: dearme-postgres
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # 프로덕션에서는 외부 포트 노출 안함 (보안)
+    # ports:
+    #   - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: dearme-backend
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
+      - SECRET_KEY=${SECRET_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DEBUG=${DEBUG:-false}
+    volumes:
+      - ./backend:/app
+    # 프로덕션에서는 Cloudflare Tunnel을 통해 접근 (외부 포트 노출 안함)
+    expose:
+      - "8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # 프로덕션에서는 --reload 제거
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    restart: unless-stopped
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: dearme-frontend
+    environment:
+      - VITE_API_URL=${API_DOMAIN}
+    # 프로덕션에서는 Cloudflare Tunnel을 통해 접근
+    expose:
+      - "80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # Cloudflare Tunnel (HTTPS)
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: dearme-cloudflared
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
