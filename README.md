@@ -54,29 +54,262 @@
 
 ---
 
-## 빠른 시작
+## 환경별 실행 가이드
 
-### 1. 환경 변수 설정
+> 신입사원분들은 이 섹션을 순서대로 따라하시면 됩니다.
+
+### 개발 환경 vs 프로덕션 환경 비교
+
+| 구분 | 개발 환경 | 프로덕션 환경 |
+|------|----------|--------------|
+| **용도** | 로컬에서 코드 작성/테스트 | 실제 서비스 배포 |
+| **프로토콜** | HTTP (암호화 없음) | HTTPS (SSL/TLS 암호화) |
+| **접속 URL** | localhost:5173, localhost:8000 | 실제 도메인 |
+| **코드 변경 반영** | 즉시 반영 (Hot Reload) | 재빌드 필요 |
+| **성능** | 느림 (개발 편의 우선) | 빠름 (최적화됨) |
+| **보안** | 낮음 (로컬 전용) | 높음 (HTTPS + 방화벽) |
+| **DB 포트 노출** | 외부 접근 가능 (5432) | 내부 전용 |
+| **설정 파일** | `docker-compose.yml` | `docker-compose.prod.yml` |
+| **환경변수 파일** | `.env` | `.env.production` |
+
+---
+
+### 개발 환경 실행 (로컬 개발용)
+
+#### 1단계: 저장소 클론
 ```bash
+git clone <repository-url>
+cd 01_dear_me
+```
+
+#### 2단계: 환경 변수 설정
+```bash
+# 샘플 파일 복사
 cp .env.example .env
-# .env 파일에서 필요한 값 설정
+
+# .env 파일 열어서 수정
 ```
 
-필요한 환경 변수:
-- `DATABASE_URL` - PostgreSQL 연결 문자열
-- `SECRET_KEY` - JWT 시크릿 키
-- `OPENAI_API_KEY` - OpenAI API 키 (페르소나 생성, 캐릭터 이미지)
-- `CLOUDFLARE_TUNNEL_TOKEN` - Cloudflare 터널 토큰 (배포 시)
+**필수 환경 변수:**
+| 변수명 | 설명 | 예시 |
+|--------|------|------|
+| `DB_USER` | DB 사용자명 | `dearme` |
+| `DB_PASSWORD` | DB 비밀번호 | `dearme123` |
+| `SECRET_KEY` | JWT 서명 키 | 아무 문자열 (개발용) |
+| `OPENAI_API_KEY` | OpenAI API 키 | `sk-...` |
 
-### 2. 개발 환경 실행
+#### 3단계: Docker 실행
 ```bash
+# 이미지 빌드 + 컨테이너 실행
 docker-compose up --build
+
+# 백그라운드 실행 (터미널 계속 사용하려면)
+docker-compose up --build -d
 ```
 
-### 3. 접속
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:8000
-- API 문서: http://localhost:8000/docs
+#### 4단계: DB 마이그레이션 (최초 1회)
+```bash
+docker-compose exec backend alembic upgrade head
+```
+
+#### 5단계: 접속 확인
+| 서비스 | URL | 설명 |
+|--------|-----|------|
+| **프론트엔드** | http://localhost:5173 | React 앱 |
+| **백엔드 API** | http://localhost:8000 | FastAPI 서버 |
+| **API 문서** | http://localhost:8000/docs | Swagger UI |
+| **DB** | localhost:5432 | PostgreSQL (DBeaver 등으로 접속 가능) |
+
+#### 개발 시 유용한 명령어
+```bash
+# 로그 실시간 확인
+docker-compose logs -f
+
+# 특정 서비스 로그만 보기
+docker-compose logs -f backend
+
+# 컨테이너 중지
+docker-compose down
+
+# 컨테이너 + 볼륨(DB 데이터) 삭제 (주의: DB 초기화됨)
+docker-compose down -v
+
+# 백엔드 컨테이너 접속 (디버깅용)
+docker-compose exec backend bash
+```
+
+---
+
+### 프로덕션 환경 실행 (실제 배포용)
+
+> ⚠️ **주의:** 프로덕션 배포는 팀 리드와 상의 후 진행하세요.
+
+#### 1단계: 환경 변수 설정
+```bash
+# 프로덕션용 샘플 파일 복사
+cp .env.production.example .env.production
+```
+
+#### 2단계: `.env.production` 수정
+
+파일을 열어 실제 값을 입력합니다:
+
+```bash
+# 데이터베이스 (강력한 비밀번호 사용!)
+DB_USER=dearme
+DB_PASSWORD=Xk9$mP2@nQ5!wL8#   # 예시 - 실제로는 더 강력하게
+
+# 보안 키 생성 (터미널에서 실행)
+openssl rand -hex 32
+# 출력된 값을 SECRET_KEY에 복사
+
+# OpenAI
+OPENAI_API_KEY=sk-실제키입력
+
+# Cloudflare (아래 '터널 설정' 참고)
+CLOUDFLARE_TUNNEL_TOKEN=터널토큰입력
+
+# 도메인
+API_DOMAIN=https://api.yourdomain.com
+FRONTEND_DOMAIN=https://yourdomain.com
+
+# 디버그 모드 끄기 (필수!)
+DEBUG=false
+```
+
+#### 3단계: Cloudflare Tunnel 설정 (HTTPS용)
+
+Cloudflare Tunnel은 별도 SSL 인증서 없이 HTTPS를 제공합니다.
+
+1. https://one.dash.cloudflare.com 접속
+2. **Zero Trust** > **Networks** > **Tunnels** 클릭
+3. **Create a tunnel** 클릭
+4. 터널 이름 입력 (예: `dearme-prod`)
+5. **Docker** 선택
+6. 표시되는 토큰을 `.env.production`의 `CLOUDFLARE_TUNNEL_TOKEN`에 복사
+7. **Public hostname** 설정:
+   - `api.yourdomain.com` → `http://backend:8000`
+   - `yourdomain.com` → `http://frontend:80`
+
+#### 4단계: 프로덕션 실행
+```bash
+# 프로덕션 빌드 + 실행
+docker-compose -f docker-compose.prod.yml --env-file .env.production up --build -d
+
+# DB 마이그레이션
+docker-compose -f docker-compose.prod.yml exec backend alembic upgrade head
+```
+
+#### 5단계: 상태 확인
+```bash
+# 모든 컨테이너 상태 확인
+docker-compose -f docker-compose.prod.yml ps
+
+# 로그 확인
+docker-compose -f docker-compose.prod.yml logs -f
+```
+
+---
+
+### 개발 vs 프로덕션 기술 차이점
+
+#### Frontend 차이점
+
+| 항목 | 개발 환경 | 프로덕션 환경 |
+|------|----------|--------------|
+| **빌드 도구** | Vite Dev Server | Vite Build → Nginx |
+| **실행 방식** | `npm run dev` | 정적 파일 서빙 |
+| **코드 변경** | Hot Module Replacement (즉시 반영) | 재빌드 필요 |
+| **소스맵** | 있음 (디버깅 가능) | 없음 (보안) |
+| **번들 크기** | 최적화 안됨 | Tree-shaking, 압축 |
+| **Dockerfile** | `Dockerfile` | `Dockerfile.prod` |
+
+**왜 다른가?**
+- 개발: 빠른 피드백이 중요 → HMR로 코드 수정 즉시 확인
+- 프로덕션: 성능이 중요 → 빌드된 정적 파일을 Nginx가 서빙
+
+#### Backend 차이점
+
+| 항목 | 개발 환경 | 프로덕션 환경 |
+|------|----------|--------------|
+| **실행 명령** | `uvicorn --reload` | `uvicorn` (reload 없음) |
+| **DEBUG 모드** | `true` | `false` |
+| **에러 표시** | 상세 스택트레이스 | 간략한 메시지 |
+| **포트 노출** | 8000 외부 접근 가능 | 내부만 (Cloudflare 경유) |
+
+**왜 다른가?**
+- `--reload`: 파일 변경 감지하여 서버 재시작 (개발 편의)
+- `DEBUG=true`: 에러 발생 시 상세 정보 노출 (보안 위험이지만 디버깅 용이)
+
+#### Database 차이점
+
+| 항목 | 개발 환경 | 프로덕션 환경 |
+|------|----------|--------------|
+| **포트 노출** | `5432:5432` (외부 접근) | 미노출 (내부만) |
+| **비밀번호** | 간단 (`dearme123`) | 복잡 (특수문자 포함) |
+| **볼륨** | 로컬 Docker 볼륨 | 영구 저장소 권장 |
+
+**왜 다른가?**
+- 개발: DBeaver 등으로 직접 DB 확인 필요
+- 프로덕션: 외부에서 DB 직접 접근은 보안 위험
+
+#### 네트워크/보안 차이점
+
+| 항목 | 개발 환경 | 프로덕션 환경 |
+|------|----------|--------------|
+| **프로토콜** | HTTP | HTTPS |
+| **비밀번호 전송** | 평문 (로컬이라 OK) | 암호화됨 |
+| **CORS** | localhost 허용 | 실제 도메인만 허용 |
+| **SSL 인증서** | 없음 | Cloudflare 자동 관리 |
+
+**왜 HTTPS가 중요한가?**
+- HTTP: 네트워크에서 데이터가 그대로 노출 (카페 와이파이에서 비밀번호 탈취 가능)
+- HTTPS: 모든 데이터 암호화 (중간에서 가로채도 해독 불가)
+
+---
+
+### 자주 발생하는 문제 & 해결법
+
+#### 1. "relation does not exist" 에러
+**원인:** DB 테이블이 생성되지 않음
+```bash
+# 해결: 마이그레이션 실행
+docker-compose exec backend alembic upgrade head
+```
+
+#### 2. 컨테이너가 계속 재시작됨
+**원인:** 환경변수 누락 또는 DB 연결 실패
+```bash
+# 해결: 로그 확인
+docker-compose logs backend
+```
+
+#### 3. 프론트엔드에서 API 호출 실패 (CORS)
+**원인:** 백엔드 CORS 설정에 프론트엔드 URL 누락
+```python
+# backend/app/core/config.py 확인
+CORS_ORIGINS: List[str] = [
+    "http://localhost:5173",  # 이 줄이 있는지 확인
+]
+```
+
+#### 4. OpenAI API 에러
+**원인:** API 키 누락 또는 잔액 부족
+```bash
+# .env 파일에서 OPENAI_API_KEY 확인
+# https://platform.openai.com 에서 잔액 확인
+```
+
+#### 5. 포트 이미 사용 중 에러
+**원인:** 다른 프로세스가 포트 사용 중
+```bash
+# 해결: 해당 포트 사용 프로세스 확인
+lsof -i :5173
+lsof -i :8000
+
+# 또는 기존 컨테이너 정리
+docker-compose down
+```
 
 ---
 
