@@ -1,12 +1,12 @@
-import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Bell, Check, CheckCheck, Trash2, UserPlus, BookOpen, User } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { notificationService } from '@/services/notificationService'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
-import { PageLoading } from '@/components/ui/Loading'
+import { NotificationListSkeleton } from '@/components/ui/Skeleton'
 import { getApiErrorMessage } from '@/lib/error'
 import { getRelativeTime } from '@/lib/utils'
 import type { Notification, NotificationType } from '@/types/notification'
@@ -42,7 +42,6 @@ const getNotificationLink = (notification: Notification): string | undefined => 
 export default function NotificationListPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const [error, setError] = useState('')
 
   const { data, isLoading } = useQuery({
     queryKey: ['notifications'],
@@ -56,18 +55,19 @@ export default function NotificationListPage() {
       queryClient.invalidateQueries({ queryKey: ['notificationUnreadCount'] })
     },
     onError: (err) => {
-      setError(getApiErrorMessage(err))
+      toast.error(getApiErrorMessage(err))
     },
   })
 
   const markAllAsReadMutation = useMutation({
     mutationFn: notificationService.markAllAsRead,
     onSuccess: () => {
+      toast.success('모든 알림을 읽음 처리했습니다.')
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
       queryClient.invalidateQueries({ queryKey: ['notificationUnreadCount'] })
     },
     onError: (err) => {
-      setError(getApiErrorMessage(err))
+      toast.error(getApiErrorMessage(err))
     },
   })
 
@@ -78,7 +78,7 @@ export default function NotificationListPage() {
       queryClient.invalidateQueries({ queryKey: ['notificationUnreadCount'] })
     },
     onError: (err) => {
-      setError(getApiErrorMessage(err))
+      toast.error(getApiErrorMessage(err))
     },
   })
 
@@ -94,7 +94,21 @@ export default function NotificationListPage() {
   }
 
   if (isLoading) {
-    return <PageLoading />
+    return (
+      <div className="mx-auto max-w-2xl space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5" />
+              알림
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <NotificationListSkeleton count={5} />
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   const notifications = data?.notifications ?? []
@@ -128,12 +142,6 @@ export default function NotificationListPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {error && (
-            <div className="mb-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-
           {notifications.length === 0 ? (
             <div className="py-12 text-center text-muted-foreground">
               알림이 없습니다

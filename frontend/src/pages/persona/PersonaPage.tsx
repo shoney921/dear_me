@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { User, MessageCircle, RefreshCw, Settings, Palette } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { personaService } from '@/services/personaService'
 import { chatService } from '@/services/chatService'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
-import { PageLoading, Loading } from '@/components/ui/Loading'
+import { Loading } from '@/components/ui/Loading'
+import { PersonaCardSkeleton } from '@/components/ui/Skeleton'
 import { PersonaSettingsModal } from '@/components/persona/PersonaSettingsModal'
 import { PersonaCustomizeModal } from '@/components/persona/PersonaCustomizeModal'
 import { MIN_DIARIES_FOR_PERSONA } from '@/lib/constants'
@@ -16,7 +18,6 @@ import { getApiErrorMessage } from '@/lib/error'
 export default function PersonaPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const [error, setError] = useState('')
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false)
 
@@ -35,23 +36,23 @@ export default function PersonaPage() {
   const generateMutation = useMutation({
     mutationFn: personaService.generate,
     onSuccess: () => {
-      setError('')
+      toast.success('페르소나가 생성되었습니다!')
       queryClient.invalidateQueries({ queryKey: ['personaStatus'] })
       queryClient.invalidateQueries({ queryKey: ['myPersona'] })
     },
     onError: (err) => {
-      setError(getApiErrorMessage(err))
+      toast.error(getApiErrorMessage(err))
     },
   })
 
   const regenerateMutation = useMutation({
     mutationFn: personaService.regenerate,
     onSuccess: () => {
-      setError('')
+      toast.success('페르소나가 재생성되었습니다!')
       queryClient.invalidateQueries({ queryKey: ['myPersona'] })
     },
     onError: (err) => {
-      setError(getApiErrorMessage(err))
+      toast.error(getApiErrorMessage(err))
     },
   })
 
@@ -66,12 +67,16 @@ export default function PersonaPage() {
       navigate(`/persona/chat/${chat.id}`)
     },
     onError: (err) => {
-      setError(getApiErrorMessage(err))
+      toast.error(getApiErrorMessage(err))
     },
   })
 
   if (isLoadingStatus || (status?.has_persona && isLoadingPersona)) {
-    return <PageLoading />
+    return (
+      <div className="mx-auto max-w-2xl space-y-6">
+        <PersonaCardSkeleton />
+      </div>
+    )
   }
 
   // 페르소나가 없는 경우
@@ -195,11 +200,6 @@ export default function PersonaPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {error && (
-            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
           {/* Personality */}
           <div>
             <h3 className="mb-2 font-semibold">성격</h3>

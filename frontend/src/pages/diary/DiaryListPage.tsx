@@ -6,7 +6,7 @@ import { Plus, BookOpen, BarChart3 } from 'lucide-react'
 import { diaryService } from '@/services/diaryService'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
-import { PageLoading } from '@/components/ui/Loading'
+import { DiaryListSkeleton } from '@/components/ui/Skeleton'
 import { formatDate } from '@/lib/utils'
 import { MOODS, WEATHER } from '@/lib/constants'
 
@@ -19,7 +19,17 @@ export default function DiaryListPage() {
   })
 
   if (isLoading) {
-    return <PageLoading />
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">내 일기</h1>
+            <p className="text-muted-foreground">로딩 중...</p>
+          </div>
+        </div>
+        <DiaryListSkeleton count={5} />
+      </div>
+    )
   }
 
   const totalPages = Math.ceil((data?.total || 0) / 10)

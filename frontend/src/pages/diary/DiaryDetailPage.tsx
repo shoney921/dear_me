@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Trash2, Pencil, X, Check } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { diaryService } from '@/services/diaryService'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { PageLoading } from '@/components/ui/Loading'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { formatDate } from '@/lib/utils'
 import { MOODS, WEATHER } from '@/lib/constants'
 import { getApiErrorMessage } from '@/lib/error'
@@ -24,6 +26,7 @@ export default function DiaryDetailPage() {
   const [editMood, setEditMood] = useState<string>('')
   const [editWeather, setEditWeather] = useState<string>('')
   const [error, setError] = useState('')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const { data: diary, isLoading } = useQuery({
     queryKey: ['diary', id],
@@ -47,10 +50,11 @@ export default function DiaryDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['diaries'] })
       queryClient.invalidateQueries({ queryKey: ['diaryCount'] })
+      toast.success('일기가 삭제되었습니다.')
       navigate('/diaries')
     },
     onError: (err) => {
-      setError(getApiErrorMessage(err))
+      toast.error(getApiErrorMessage(err))
     },
   })
 
@@ -62,16 +66,20 @@ export default function DiaryDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['diaries'] })
       setIsEditing(false)
       setError('')
+      toast.success('일기가 수정되었습니다.')
     },
     onError: (err) => {
-      setError(getApiErrorMessage(err))
+      toast.error(getApiErrorMessage(err))
     },
   })
 
   const handleDelete = () => {
-    if (window.confirm('정말 삭제하시겠습니까?')) {
-      deleteMutation.mutate()
-    }
+    setShowDeleteConfirm(true)
+  }
+
+  const handleConfirmDelete = () => {
+    deleteMutation.mutate()
+    setShowDeleteConfirm(false)
   }
 
   const handleEdit = () => {
@@ -234,6 +242,18 @@ export default function DiaryDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleConfirmDelete}
+        title="일기 삭제"
+        description="정말 이 일기를 삭제하시겠습니까? 삭제된 일기는 복구할 수 없습니다."
+        confirmText="삭제"
+        cancelText="취소"
+        variant="destructive"
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   )
 }

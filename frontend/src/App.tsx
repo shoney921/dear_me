@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { Toaster } from 'sonner'
 
 import { useAuthStore } from '@/store/authStore'
 import Layout from '@/components/common/Layout'
@@ -33,6 +34,18 @@ function App() {
   }
 
   return (
+    <>
+    <Toaster
+      position="top-center"
+      toastOptions={{
+        duration: 3000,
+        style: {
+          background: 'hsl(var(--background))',
+          color: 'hsl(var(--foreground))',
+          border: '1px solid hsl(var(--border))',
+        },
+      }}
+    />
     <Routes>
       {/* Public routes */}
       <Route
@@ -65,6 +78,7 @@ function App() {
       {/* 404 */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   )
 }
 

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Users, Search, UserPlus, Check, X, Clock, UserMinus, MessageCircle } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { friendService } from '@/services/friendService'
 import { chatService } from '@/services/chatService'
@@ -9,7 +10,9 @@ import { personaService } from '@/services/personaService'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
-import { PageLoading, Loading } from '@/components/ui/Loading'
+import { Loading } from '@/components/ui/Loading'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { FriendListSkeleton } from '@/components/ui/Skeleton'
 import { getApiErrorMessage } from '@/lib/error'
 
 export default function FriendListPage() {
@@ -17,8 +20,7 @@ export default function FriendListPage() {
   const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearching, setIsSearching] = useState(false)
-  const [error, setError] = useState('')
-  const [successMessage, setSuccessMessage] = useState('')
+  const [friendToDelete, setFriendToDelete] = useState<{ id: number; name: string } | null>(null)
 
   // 친구 목록
   const { data: friends, isLoading: isLoadingFriends } = useQuery({
@@ -49,14 +51,12 @@ export default function FriendListPage() {
   const sendRequestMutation = useMutation({
     mutationFn: friendService.sendRequest,
     onSuccess: () => {
-      setError('')
-      setSuccessMessage('친구 요청을 보냈습니다.')
+      toast.success('친구 요청을 보냈습니다.')
       queryClient.invalidateQueries({ queryKey: ['friendRequests'] })
       queryClient.invalidateQueries({ queryKey: ['userSearch'] })
     },
     onError: (err) => {
-      setSuccessMessage('')
-      setError(getApiErrorMessage(err))
+      toast.error(getApiErrorMessage(err))
     },
   })
 
@@ -65,14 +65,12 @@ export default function FriendListPage() {
     mutationFn: ({ id, status }: { id: number; status: 'accepted' | 'rejected' }) =>
       friendService.respondToRequest(id, status),
     onSuccess: (_, variables) => {
-      setError('')
-      setSuccessMessage(variables.status === 'accepted' ? '친구 요청을 수락했습니다.' : '친구 요청을 거절했습니다.')
+      toast.success(variables.status === 'accepted' ? '친구 요청을 수락했습니다.' : '친구 요청을 거절했습니다.')
       queryClient.invalidateQueries({ queryKey: ['friends'] })
       queryClient.invalidateQueries({ queryKey: ['friendRequests'] })
     },
     onError: (err) => {
-      setSuccessMessage('')
-      setError(getApiErrorMessage(err))
+      toast.error(getApiErrorMessage(err))
     },
   })
 
@@ -80,13 +78,11 @@ export default function FriendListPage() {
   const removeFriendMutation = useMutation({
     mutationFn: friendService.removeFriend,
     onSuccess: () => {
-      setError('')
-      setSuccessMessage('친구를 삭제했습니다.')
+      toast.success('친구를 삭제했습니다.')
       queryClient.invalidateQueries({ queryKey: ['friends'] })
     },
     onError: (err) => {
-      setSuccessMessage('')
-      setError(getApiErrorMessage(err))
+      toast.error(getApiErrorMessage(err))
     },
   })
 
@@ -103,44 +99,62 @@ export default function FriendListPage() {
       navigate(`/persona/chat/${chat.id}`)
     },
     onError: (err) => {
-      setSuccessMessage('')
-      setError(getApiErrorMessage(err))
+      toast.error(getApiErrorMessage(err))
     },
   })
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
       setIsSearching(true)
-      setError('')
-      setSuccessMessage('')
       searchUsers()
     }
   }
 
   const handleRemoveFriend = (friendId: number, friendName: string) => {
-    if (window.confirm(`${friendName}님을 친구에서 삭제하시겠습니까?`)) {
-      removeFriendMutation.mutate(friendId)
+    setFriendToDelete({ id: friendId, name: friendName })
+  }
+
+  const handleConfirmRemoveFriend = () => {
+    if (friendToDelete) {
+      removeFriendMutation.mutate(friendToDelete.id)
+      setFriendToDelete(null)
     }
   }
 
   if (isLoadingFriends) {
-    return <PageLoading />
+    return (
+      <div className="mx-auto max-w-2xl space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Search className="h-5 w-5" />
+              친구 찾기
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <Input placeholder="사용자명으로 검색" disabled />
+              <Button disabled>검색</Button>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              친구 목록
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FriendListSkeleton count={3} />
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      {/* Messages */}
-      {error && (
-        <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
-        </div>
-      )}
-      {successMessage && (
-        <div className="rounded-md bg-green-500/10 p-3 text-sm text-green-600">
-          {successMessage}
-        </div>
-      )}
-
       {/* Search */}
       <Card>
         <CardHeader>
@@ -330,6 +344,18 @@ export default function FriendListPage() {
           )}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        isOpen={!!friendToDelete}
+        onClose={() => setFriendToDelete(null)}
+        onConfirm={handleConfirmRemoveFriend}
+        title="친구 삭제"
+        description={`${friendToDelete?.name}님을 친구 목록에서 삭제하시겠습니까?`}
+        confirmText="삭제"
+        cancelText="취소"
+        variant="destructive"
+        isLoading={removeFriendMutation.isPending}
+      />
     </div>
   )
 }

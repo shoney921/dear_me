@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Lightbulb, RefreshCw } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { diaryService } from '@/services/diaryService'
 import { Button } from '@/components/ui/Button'
@@ -18,7 +19,6 @@ export default function DiaryNewPage() {
   const [content, setContent] = useState('')
   const [mood, setMood] = useState<string>('')
   const [weather, setWeather] = useState<string>('')
-  const [error, setError] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [diaryDate, setDiaryDate] = useState(
     new Date().toISOString().split('T')[0]
@@ -36,16 +36,16 @@ export default function DiaryNewPage() {
       queryClient.invalidateQueries({ queryKey: ['diaries'] })
       queryClient.invalidateQueries({ queryKey: ['diaryCount'] })
       queryClient.invalidateQueries({ queryKey: ['personaStatus'] })
+      toast.success('일기가 저장되었습니다.')
       navigate('/diaries')
     },
     onError: (err) => {
-      setError(getApiErrorMessage(err))
+      toast.error(getApiErrorMessage(err))
     },
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
     createMutation.mutate({
       title,
       content,
@@ -124,11 +124,7 @@ export default function DiaryNewPage() {
                 )}
               </div>
             )}
-            {error && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
-              </div>
-            )}
+
             {/* Date */}
             <div className="space-y-2">
               <label className="text-sm font-medium">날짜</label>
