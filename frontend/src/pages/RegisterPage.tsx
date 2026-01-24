@@ -1,12 +1,21 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
+import { toast } from 'sonner'
 
 import { authService } from '@/services/authService'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card'
 import { getApiErrorMessage } from '@/lib/error'
+import { cn } from '@/lib/utils'
+
+interface FieldErrors {
+  email?: string
+  username?: string
+  password?: string
+  confirmPassword?: string
+}
 
 export default function RegisterPage() {
   const navigate = useNavigate()
@@ -15,49 +24,120 @@ export default function RegisterPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [error, setError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
 
   const registerMutation = useMutation({
     mutationFn: authService.register,
     onSuccess: () => {
-      // 회원가입 성공 시 로그인 페이지로 이동
-      navigate('/login', {
-        state: { message: '회원가입이 완료되었습니다. 로그인해주세요.' },
-        replace: true
-      })
+      toast.success('회원가입이 완료되었습니다. 로그인해주세요.')
+      navigate('/login', { replace: true })
     },
     onError: (err) => {
-      setError(getApiErrorMessage(err))
+      toast.error(getApiErrorMessage(err))
     },
   })
 
+  const validateField = (field: string, value: string) => {
+    const errors: FieldErrors = { ...fieldErrors }
+
+    switch (field) {
+      case 'email':
+        if (!value.trim()) {
+          errors.email = '이메일을 입력해주세요.'
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          errors.email = '올바른 이메일 형식이 아닙니다.'
+        } else {
+          delete errors.email
+        }
+        break
+      case 'username':
+        if (!value.trim()) {
+          errors.username = '사용자명을 입력해주세요.'
+        } else if (value.length < 2) {
+          errors.username = '사용자명은 2자 이상이어야 합니다.'
+        } else {
+          delete errors.username
+        }
+        break
+      case 'password':
+        if (!value.trim()) {
+          errors.password = '비밀번호를 입력해주세요.'
+        } else if (value.length < 8) {
+          errors.password = '비밀번호는 8자 이상이어야 합니다.'
+        } else {
+          delete errors.password
+        }
+        // 비밀번호 확인도 다시 검증
+        if (confirmPassword && value !== confirmPassword) {
+          errors.confirmPassword = '비밀번호가 일치하지 않습니다.'
+        } else if (confirmPassword) {
+          delete errors.confirmPassword
+        }
+        break
+      case 'confirmPassword':
+        if (!value.trim()) {
+          errors.confirmPassword = '비밀번호 확인을 입력해주세요.'
+        } else if (value !== password) {
+          errors.confirmPassword = '비밀번호가 일치하지 않습니다.'
+        } else {
+          delete errors.confirmPassword
+        }
+        break
+    }
+
+    setFieldErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  const handleBlur = (field: string) => {
+    setTouched({ ...touched, [field]: true })
+    validateField(field, field === 'email' ? email : field === 'username' ? username : field === 'password' ? password : confirmPassword)
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
 
-    // 클라이언트 측 유효성 검사
-    if (!email.trim() || !username.trim() || !password.trim()) {
-      setError('모든 필드를 입력해주세요.')
-      return
+    // 모든 필드 터치 처리
+    setTouched({ email: true, username: true, password: true, confirmPassword: true })
+
+    // 모든 필드 검증
+    const errors: FieldErrors = {}
+
+    if (!email.trim()) {
+      errors.email = '이메일을 입력해주세요.'
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.email = '올바른 이메일 형식이 아닙니다.'
     }
 
-    if (password !== confirmPassword) {
-      setError('비밀번호가 일치하지 않습니다.')
-      return
+    if (!username.trim()) {
+      errors.username = '사용자명을 입력해주세요.'
+    } else if (username.length < 2) {
+      errors.username = '사용자명은 2자 이상이어야 합니다.'
     }
 
-    if (password.length < 8) {
-      setError('비밀번호는 8자 이상이어야 합니다.')
-      return
+    if (!password.trim()) {
+      errors.password = '비밀번호를 입력해주세요.'
+    } else if (password.length < 8) {
+      errors.password = '비밀번호는 8자 이상이어야 합니다.'
     }
 
-    if (username.length < 2) {
-      setError('사용자명은 2자 이상이어야 합니다.')
+    if (!confirmPassword.trim()) {
+      errors.confirmPassword = '비밀번호 확인을 입력해주세요.'
+    } else if (password !== confirmPassword) {
+      errors.confirmPassword = '비밀번호가 일치하지 않습니다.'
+    }
+
+    setFieldErrors(errors)
+
+    if (Object.keys(errors).length > 0) {
       return
     }
 
     registerMutation.mutate({ email, username, password })
   }
+
+  const hasError = (field: string) => touched[field] && fieldErrors[field as keyof FieldErrors]
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
@@ -68,11 +148,6 @@ export default function RegisterPage() {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
-            {error && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
-              </div>
-            )}
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium">
                 이메일
@@ -82,10 +157,17 @@ export default function RegisterPage() {
                 type="email"
                 placeholder="email@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  if (touched.email) validateField('email', e.target.value)
+                }}
+                onBlur={() => handleBlur('email')}
+                className={cn(hasError('email') && 'border-destructive focus-visible:ring-destructive')}
                 autoComplete="email"
               />
+              {hasError('email') && (
+                <p className="text-sm text-destructive">{fieldErrors.email}</p>
+              )}
             </div>
             <div className="space-y-2">
               <label htmlFor="username" className="text-sm font-medium">
@@ -96,12 +178,19 @@ export default function RegisterPage() {
                 type="text"
                 placeholder="username"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
+                onChange={(e) => {
+                  setUsername(e.target.value)
+                  if (touched.username) validateField('username', e.target.value)
+                }}
+                onBlur={() => handleBlur('username')}
+                className={cn(hasError('username') && 'border-destructive focus-visible:ring-destructive')}
                 minLength={2}
                 maxLength={50}
                 autoComplete="username"
               />
+              {hasError('username') && (
+                <p className="text-sm text-destructive">{fieldErrors.username}</p>
+              )}
             </div>
             <div className="space-y-2">
               <label htmlFor="password" className="text-sm font-medium">
@@ -112,11 +201,18 @@ export default function RegisterPage() {
                 type="password"
                 placeholder="8자 이상"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  if (touched.password) validateField('password', e.target.value)
+                }}
+                onBlur={() => handleBlur('password')}
+                className={cn(hasError('password') && 'border-destructive focus-visible:ring-destructive')}
                 minLength={8}
                 autoComplete="new-password"
               />
+              {hasError('password') && (
+                <p className="text-sm text-destructive">{fieldErrors.password}</p>
+              )}
             </div>
             <div className="space-y-2">
               <label htmlFor="confirmPassword" className="text-sm font-medium">
@@ -127,10 +223,17 @@ export default function RegisterPage() {
                 type="password"
                 placeholder="비밀번호 확인"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value)
+                  if (touched.confirmPassword) validateField('confirmPassword', e.target.value)
+                }}
+                onBlur={() => handleBlur('confirmPassword')}
+                className={cn(hasError('confirmPassword') && 'border-destructive focus-visible:ring-destructive')}
                 autoComplete="new-password"
               />
+              {hasError('confirmPassword') && (
+                <p className="text-sm text-destructive">{fieldErrors.confirmPassword}</p>
+              )}
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
