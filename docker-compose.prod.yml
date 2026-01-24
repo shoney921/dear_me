@@ -5,19 +5,26 @@
 #   1. .env.production.example을 .env.production으로 복사
 #   2. .env.production 파일에 실제 값 입력
 #   3. docker-compose -f docker-compose.prod.yml --env-file .env.production up -d
+#
+# 개발 환경과 동시 실행 가능 (포트/볼륨/네트워크 분리)
+# - PostgreSQL: 5433 (개발: 5432)
+# - Backend: 8001 (개발: 8000)
+# - Frontend: 8080 (개발: 5173)
 # ============================================
 
 services:
-  # PostgreSQL Database
+  # PostgreSQL Database (운영)
   postgres:
     image: postgres:15
-    container_name: dearme-postgres
+    container_name: dearme-prod-postgres
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_prod:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
       interval: 5s
@@ -25,14 +32,14 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - dearme-network
+      - dearme-prod-network
 
-  # FastAPI Backend
+  # FastAPI Backend (운영)
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: dearme-backend
+    container_name: dearme-prod-backend
     environment:
       - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
       - SECRET_KEY=${SECRET_KEY}
@@ -40,6 +47,8 @@ services:
       - DEBUG=${DEBUG:-false}
     volumes:
       - ./backend:/app
+    ports:
+      - "8001:8000"
     expose:
       - "8000"
     depends_on:
@@ -48,28 +57,28 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     restart: unless-stopped
     networks:
-      - dearme-network
+      - dearme-prod-network
 
-  # React Frontend
+  # React Frontend (운영)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
       args:
         VITE_API_URL: ""
-    container_name: dearme-frontend
+    container_name: dearme-prod-frontend
     ports:
       - "8080:80"
     depends_on:
       - backend
     restart: unless-stopped
     networks:
-      - dearme-network
+      - dearme-prod-network
 
   # Cloudflare Tunnel (HTTPS)
   cloudflared:
     image: cloudflare/cloudflared:latest
-    container_name: dearme-cloudflared
+    container_name: dearme-prod-cloudflared
     command: tunnel --no-autoupdate run
     environment:
       - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
@@ -80,8 +89,8 @@ services:
     network_mode: host
 
 networks:
-  dearme-network:
+  dearme-prod-network:
     driver: bridge
 
 volumes:
-  postgres_data:
+  postgres_data_prod:
