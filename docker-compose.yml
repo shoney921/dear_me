@@ -1,14 +1,22 @@
+# ============================================
+# DearMe 개발용 Docker Compose
+# ============================================
+# 사용법:
+#   docker-compose up -d
+#   docker-compose exec backend python -m scripts.seed_data
+# ============================================
+
 services:
-  # PostgreSQL Database
+  # PostgreSQL Database (개발)
   postgres:
     image: postgres:15
-    container_name: dearme-postgres
+    container_name: dearme-dev-postgres
     environment:
       POSTGRES_USER: ${DB_USER:-dearme}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-dearme123}
       POSTGRES_DB: ${DB_NAME:-dearme}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_dev:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
@@ -16,13 +24,15 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - dearme-dev-network
 
-  # FastAPI Backend
+  # FastAPI Backend (개발)
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: dearme-backend
+    container_name: dearme-dev-backend
     environment:
       - DATABASE_URL=postgresql://${DB_USER:-dearme}:${DB_PASSWORD:-dearme123}@postgres:5432/${DB_NAME:-dearme}
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
@@ -36,13 +46,15 @@ services:
       postgres:
         condition: service_healthy
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - dearme-dev-network
 
-  # React Frontend
+  # React Frontend (개발)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: dearme-frontend
+    container_name: dearme-dev-frontend
     environment:
       - VITE_API_URL=http://localhost:8000
     volumes:
@@ -53,6 +65,12 @@ services:
     depends_on:
       - backend
     command: npm run dev -- --host
+    networks:
+      - dearme-dev-network
+
+networks:
+  dearme-dev-network:
+    driver: bridge
 
 volumes:
-  postgres_data:
+  postgres_data_dev:
