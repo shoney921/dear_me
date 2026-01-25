@@ -1,7 +1,8 @@
+import json
 from datetime import datetime
 from typing import Optional, List
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class PersonaCustomization(BaseModel):
@@ -32,6 +33,26 @@ class PersonaResponse(PersonaBase):
     created_at: datetime
     updated_at: datetime
 
+    @field_validator('traits', mode='before')
+    @classmethod
+    def parse_traits(cls, v):
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                return []
+        return v
+
+    @field_validator('customization', mode='before')
+    @classmethod
+    def parse_customization(cls, v):
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                return None
+        return v
+
     class Config:
         from_attributes = True
 
@@ -47,6 +68,9 @@ class PersonaGenerateResponse(BaseModel):
 
     persona: PersonaResponse
     message: str
+
+    class Config:
+        from_attributes = True
 
 
 class PersonaUpdateRequest(BaseModel):

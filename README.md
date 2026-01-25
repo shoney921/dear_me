@@ -158,6 +158,13 @@ docker-compose exec backend bash
 
 개발 환경에서 테스트용 샘플 데이터를 쉽게 생성할 수 있습니다.
 
+> **주의:** 시드 데이터를 생성하기 전에 반드시 DB 마이그레이션이 완료되어 있어야 합니다.
+> 마이그레이션 없이 실행하면 `relation "users" does not exist` 에러가 발생합니다.
+> ```bash
+> # 마이그레이션 먼저 실행!
+> docker-compose exec backend alembic upgrade head
+> ```
+
 ```bash
 # 샘플 데이터 생성
 docker-compose exec backend python -m scripts.seed_data
