@@ -78,6 +78,7 @@
 
 | 리소스 | 개발 환경 (dev) | 운영 환경 (prod) |
 |--------|----------------|-----------------|
+| 프로젝트 이름 | `dearme-dev` | `dearme-prod` |
 | PostgreSQL 컨테이너 | `dearme-dev-postgres` | `dearme-prod-postgres` |
 | Backend 컨테이너 | `dearme-dev-backend` | `dearme-prod-backend` |
 | Frontend 컨테이너 | `dearme-dev-frontend` | `dearme-prod-frontend` |
@@ -283,13 +284,13 @@ docker-compose -f docker-compose.prod.yml logs -f
 
 | 항목 | 개발 환경 | 프로덕션 환경 |
 |------|----------|--------------|
-| **포트 노출** | `5432:5432` (외부 접근) | 미노출 (내부만) |
+| **포트 노출** | `5432:5432` (외부 접근) | `5433:5432` (외부 접근) |
 | **비밀번호** | 간단 (`dearme123`) | 복잡 (특수문자 포함) |
-| **볼륨** | 로컬 Docker 볼륨 | 영구 저장소 권장 |
+| **볼륨** | `postgres_data_dev` | `postgres_data_prod` |
 
 **왜 다른가?**
-- 개발: DBeaver 등으로 직접 DB 확인 필요
-- 프로덕션: 외부에서 DB 직접 접근은 보안 위험
+- 개발: DBeaver 등으로 직접 DB 확인 필요 (포트 5432)
+- 프로덕션: 개발과 다른 포트(5433) 사용으로 동시 실행 가능
 
 #### 네트워크/보안 차이점
 
@@ -495,7 +496,7 @@ docker-compose -f docker-compose.prod.yml exec backend alembic upgrade head
 ## 프로젝트 구조
 
 ```
-02.DEAR_ME/
+01_dear_me/
 ├── backend/
 │   └── app/
 │       ├── api/api_v1/endpoints/   # API 엔드포인트
@@ -515,7 +516,8 @@ docker-compose -f docker-compose.prod.yml exec backend alembic upgrade head
 │       └── hooks/                   # 커스텀 훅
 ├── nginx/                           # Nginx 설정
 ├── docs/                            # 프로젝트 문서
-└── docker-compose.yml
+├── docker-compose.yml               # 개발 환경 (name: dearme-dev)
+└── docker-compose.prod.yml          # 운영 환경 (name: dearme-prod)
 ```
 
 ---
