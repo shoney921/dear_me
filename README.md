@@ -68,9 +68,24 @@
 | **코드 변경 반영** | 즉시 반영 (Hot Reload) | 재빌드 필요 |
 | **성능** | 느림 (개발 편의 우선) | 빠름 (최적화됨) |
 | **보안** | 낮음 (로컬 전용) | 높음 (HTTPS + 방화벽) |
-| **DB 포트 노출** | 외부 접근 가능 (5432) | 내부 전용 |
+| **DB 포트 노출** | 외부 접근 가능 (5432) | 내부 전용 (5433) |
 | **설정 파일** | `docker-compose.yml` | `docker-compose.prod.yml` |
 | **환경변수 파일** | `.env` | `.env.production` |
+
+#### Docker 리소스 분리 (동시 실행 가능)
+
+개발/운영 환경이 서로 다른 리소스를 사용하므로 **동시에 실행할 수 있습니다.**
+
+| 리소스 | 개발 환경 (dev) | 운영 환경 (prod) |
+|--------|----------------|-----------------|
+| PostgreSQL 컨테이너 | `dearme-dev-postgres` | `dearme-prod-postgres` |
+| Backend 컨테이너 | `dearme-dev-backend` | `dearme-prod-backend` |
+| Frontend 컨테이너 | `dearme-dev-frontend` | `dearme-prod-frontend` |
+| DB 포트 | 5432 | 5433 |
+| API 포트 | 8000 | 8001 |
+| 웹 포트 | 5173 | 8080 |
+| DB 볼륨 | `postgres_data_dev` | `postgres_data_prod` |
+| 네트워크 | `dearme-dev-network` | `dearme-prod-network` |
 
 ---
 
@@ -137,6 +152,29 @@ docker-compose down -v
 # 백엔드 컨테이너 접속 (디버깅용)
 docker-compose exec backend bash
 ```
+
+#### 시드 데이터 생성 (테스트용 샘플 데이터)
+
+개발 환경에서 테스트용 샘플 데이터를 쉽게 생성할 수 있습니다.
+
+```bash
+# 샘플 데이터 생성
+docker-compose exec backend python -m scripts.seed_data
+
+# 기존 데이터 삭제 후 새로 생성
+docker-compose exec backend python -m scripts.seed_data --clear
+```
+
+**생성되는 데이터:**
+| 데이터 | 수량 | 설명 |
+|--------|------|------|
+| 유저 | 10명 | `user1@test.com` ~ `user10@test.com` (비밀번호: `test1234`) |
+| 일기 | 80개 | 유저당 8개 (페르소나 생성 조건 7개 충족) |
+| 페르소나 | 10개 | 유저당 1개 |
+| 친구 관계 | ~25개 | 수락됨 22개, 대기중 3개 |
+| 채팅 | ~15개 | 메시지 약 60개 |
+| 알림 | ~12개 | 친구 요청 알림 등 |
+| 구독 | 10개 | 프리미엄 2명, 무료 8명 |
 
 ---
 
@@ -310,6 +348,40 @@ lsof -i :8000
 # 또는 기존 컨테이너 정리
 docker-compose down
 ```
+
+#### 6. 환경 전환 후 프론트엔드 "npm not found" 에러
+**원인:** 개발/프로덕션 환경 전환 시 Docker 이미지가 캐시됨
+- 개발환경: Node.js 이미지 (npm 포함)
+- 프로덕션: Nginx 이미지 (npm 없음)
+
+```bash
+# 해결: 이미지 강제 재빌드
+docker-compose build --no-cache frontend
+docker-compose up -d frontend
+
+# 또는 처음부터 --build 옵션 사용 (권장)
+docker-compose up -d --build
+```
+
+#### 7. 새 환경에서 "relation does not exist" 에러
+**원인:** 환경 분리로 새 DB 볼륨 사용 시 테이블이 없음
+- 개발환경: `postgres_data_dev` 볼륨
+- 프로덕션: `postgres_data_prod` 볼륨
+
+```bash
+# 해결: 해당 환경에서 마이그레이션 실행
+
+# 개발 환경
+docker-compose exec backend alembic upgrade head
+
+# 프로덕션 환경
+docker-compose -f docker-compose.prod.yml exec backend alembic upgrade head
+```
+
+> **팁:** 환경을 처음 실행하거나 전환할 때는 항상 `--build` 옵션과 마이그레이션을 함께 실행하세요:
+> ```bash
+> docker-compose up -d --build && docker-compose exec backend alembic upgrade head
+> ```
 
 ---
 

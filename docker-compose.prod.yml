@@ -12,6 +12,8 @@
 # - Frontend: 8080 (개발: 5173)
 # ============================================
 
+name: dearme-prod
+
 services:
   # PostgreSQL Database (운영)
   postgres:
