@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_db, get_current_active_user
+from app.core.business_logger import biz_log
 from app.models.user import User
 from app.schemas.user import UserResponse, UserUpdate
 
@@ -11,6 +12,7 @@ router = APIRouter()
 @router.get("/me", response_model=UserResponse)
 def get_current_user_info(current_user: User = Depends(get_current_active_user)):
     """현재 로그인한 사용자 정보 조회"""
+    biz_log.user_me(current_user.username)
     return current_user
 
 
@@ -40,6 +42,7 @@ def update_current_user(
     db.commit()
     db.refresh(current_user)
 
+    biz_log.user_update(current_user.username)
     return current_user
 
 
@@ -56,6 +59,7 @@ def get_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
+    biz_log.user_get(current_user.username, user_id)
     return user
 
 
@@ -72,4 +76,5 @@ def search_users(
         User.is_active.is_(True),
     ).limit(20).all()
 
+    biz_log.user_search(current_user.username, username, len(users))
     return users

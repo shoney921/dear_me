@@ -52,11 +52,13 @@ def get_my_persona(
     persona = db.query(Persona).filter(Persona.user_id == current_user.id).first()
 
     if not persona:
+        biz_log.persona_get_me(current_user.username, False)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Persona not found. Write at least 7 diaries to generate your persona.",
         )
 
+    biz_log.persona_get_me(current_user.username, True)
     return _parse_persona_response(persona)
 
 
@@ -84,6 +86,7 @@ def update_my_persona(
     db.commit()
     db.refresh(persona)
 
+    biz_log.persona_update(current_user.username)
     return _parse_persona_response(persona)
 
 
@@ -208,11 +211,13 @@ def get_persona_status(
     """페르소나 생성 가능 상태 확인"""
     diary_count = db.query(Diary).filter(Diary.user_id == current_user.id).count()
     has_persona = db.query(Persona).filter(Persona.user_id == current_user.id).first() is not None
+    can_generate = diary_count >= MIN_DIARIES_FOR_PERSONA
 
+    biz_log.persona_status(current_user.username, can_generate, diary_count)
     return {
         "diary_count": diary_count,
         "required_count": MIN_DIARIES_FOR_PERSONA,
-        "can_generate": diary_count >= MIN_DIARIES_FOR_PERSONA,
+        "can_generate": can_generate,
         "has_persona": has_persona,
     }
 
@@ -266,5 +271,10 @@ def get_user_persona(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="This persona is private",
         )
+
+    # 친구 이름 조회
+    friend = db.query(User).filter(User.id == user_id).first()
+    friend_name = friend.username if friend else "Unknown"
+    biz_log.persona_get_friend(current_user.username, friend_name)
 
     return _parse_persona_response(persona)
