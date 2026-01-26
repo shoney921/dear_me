@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
 
 from app.core.deps import get_db, get_current_active_user
+from app.core.business_logger import biz_log
 from app.models.friendship import Friendship, FriendshipStatus
 from app.models.user import User
 from app.schemas.friendship import (
@@ -73,6 +74,7 @@ def send_friend_request(
     db.commit()
     db.refresh(friendship)
 
+    biz_log.friend_request(current_user.username, addressee.username)
     return friendship
 
 
@@ -136,9 +138,17 @@ def respond_to_request(
             detail="Friend request not found",
         )
 
+    requester = db.query(User).filter(User.id == friendship.requester_id).first()
+    requester_name = requester.username if requester else "Unknown"
+
     friendship.status = update.status
     db.commit()
     db.refresh(friendship)
+
+    if update.status == FriendshipStatus.ACCEPTED:
+        biz_log.friend_accept(current_user.username, requester_name)
+    else:
+        biz_log.friend_reject(current_user.username, requester_name)
 
     return friendship
 
@@ -194,5 +204,10 @@ def remove_friend(
             detail="Friendship not found",
         )
 
+    # 삭제되는 친구 이름 조회
+    friend = db.query(User).filter(User.id == friend_id).first()
+    friend_name = friend.username if friend else "Unknown"
+
+    biz_log.friend_delete(current_user.username, friend_name)
     db.delete(friendship)
     db.commit()

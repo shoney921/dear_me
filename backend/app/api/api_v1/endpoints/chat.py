@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
 
 from app.core.deps import get_db, get_current_active_user
+from app.core.business_logger import biz_log
 from app.models.chat import PersonaChat, ChatMessage
 from app.models.persona import Persona
 from app.models.user import User
@@ -69,6 +70,7 @@ def create_chat(
     db.commit()
     db.refresh(chat)
 
+    biz_log.chat_create(current_user.username, persona.name, is_own)
     return chat
 
 
@@ -130,9 +132,16 @@ async def send_message(
             detail="Chat not found",
         )
 
+    # 페르소나 이름 조회
+    persona = db.query(Persona).filter(Persona.id == chat.persona_id).first()
+    persona_name = persona.name if persona else "Unknown"
+
+    biz_log.chat_message(current_user.username, persona_name, message_in.content)
+
     chat_service = ChatService(db)
     response_message = await chat_service.send_message(chat, message_in.content)
 
+    biz_log.chat_response(persona_name, response_message.content)
     return response_message
 
 

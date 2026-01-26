@@ -1,8 +1,31 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.api_v1.api import api_router
 from app.core.config import settings
+
+
+# 로깅 설정
+def setup_logging():
+    """개발/운영 환경에 맞는 로깅 설정"""
+    log_level = logging.DEBUG if settings.DEBUG else logging.INFO
+
+    # 기본 로깅 포맷
+    logging.basicConfig(
+        level=log_level,
+        format="%(levelname)s: %(message)s" if settings.DEBUG else "%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
+
+    # 외부 라이브러리 로그 레벨 조정 (너무 verbose한 것들)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("openai").setLevel(logging.WARNING)
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+
+
+setup_logging()
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

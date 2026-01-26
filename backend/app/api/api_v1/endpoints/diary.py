@@ -10,6 +10,7 @@ from sqlalchemy import func
 
 from app.core.deps import get_db, get_current_active_user
 from app.core.config import settings
+from app.core.business_logger import biz_log
 from app.models.diary import Diary
 from app.models.user import User
 from app.schemas.diary import DiaryCreate, DiaryResponse, DiaryUpdate, DiaryListResponse, DiaryStats, DiaryPromptSuggestionResponse
@@ -51,6 +52,7 @@ def create_diary(
     db.commit()
     db.refresh(diary)
 
+    biz_log.diary_create(current_user.username, str(diary_in.diary_date), diary_in.mood)
     return diary
 
 
@@ -305,6 +307,7 @@ def update_diary(
     db.commit()
     db.refresh(diary)
 
+    biz_log.diary_update(current_user.username, diary_id)
     return diary
 
 
@@ -326,5 +329,6 @@ def delete_diary(
             detail="Diary not found",
         )
 
+    biz_log.diary_delete(current_user.username, diary_id)
     db.delete(diary)
     db.commit()

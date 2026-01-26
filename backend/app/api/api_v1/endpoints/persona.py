@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
 
 from app.core.deps import get_db, get_current_active_user
+from app.core.business_logger import biz_log
 from app.models.diary import Diary
 from app.models.persona import Persona
 from app.models.user import User
@@ -123,6 +124,7 @@ def customize_my_persona(
     db.commit()
     db.refresh(persona)
 
+    biz_log.persona_customize(current_user.username)
     return {
         "id": persona.id,
         "customization": existing_customization,
@@ -154,9 +156,11 @@ async def generate_persona(
         )
 
     # 페르소나 생성
+    biz_log.persona_generate(current_user.username, diary_count)
     persona_service = PersonaService(db)
     persona = await persona_service.generate_persona(current_user)
 
+    biz_log.persona_generated(current_user.username, persona.name)
     return PersonaGenerateResponse(
         persona=persona,
         message="Persona generated successfully!",
@@ -185,9 +189,11 @@ async def regenerate_persona(
         db.commit()
 
     # 페르소나 재생성
+    biz_log.persona_regenerate(current_user.username)
     persona_service = PersonaService(db)
     persona = await persona_service.generate_persona(current_user)
 
+    biz_log.persona_generated(current_user.username, persona.name)
     return PersonaGenerateResponse(
         persona=persona,
         message="Persona regenerated successfully!",
