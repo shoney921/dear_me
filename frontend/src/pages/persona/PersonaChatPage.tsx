@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Send } from 'lucide-react'
+import { ArrowLeft, Send, Info, X } from 'lucide-react'
 
 import { chatService } from '@/services/chatService'
 import { Button } from '@/components/ui/Button'
@@ -18,6 +18,7 @@ export default function PersonaChatPage() {
 
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [showDisclaimer, setShowDisclaimer] = useState(true)
 
   // chatId가 없으면 페르소나 페이지로 리다이렉트
   useEffect(() => {
@@ -84,6 +85,26 @@ export default function PersonaChatPage() {
           </p>
         </div>
       </div>
+
+      {/* AI Disclaimer */}
+      {showDisclaimer && (
+        <div className="mb-2 flex items-start gap-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 p-3 text-sm text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+          <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="font-medium">AI 페르소나 안내</p>
+            <p className="text-xs mt-1 opacity-80">
+              이 페르소나는 AI가 생성한 가상의 인격체로 실제 사람이 아닙니다.
+              응답은 참고용이며, 전문적인 상담을 대체할 수 없습니다.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowDisclaimer(false)}
+            className="text-blue-500 hover:text-blue-700"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto py-4">
