@@ -15,6 +15,7 @@ from app.models.diary import Diary
 from app.models.user import User
 from app.schemas.diary import DiaryCreate, DiaryResponse, DiaryUpdate, DiaryListResponse, DiaryStats, DiaryPromptSuggestionResponse
 from app.constants.prompts import DIARY_PROMPT_SUGGESTION
+from app.services.milestone_service import MilestoneService
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +54,11 @@ def create_diary(
     db.refresh(diary)
 
     biz_log.diary_create(current_user.username, str(diary_in.diary_date), diary_in.mood)
+
+    # Check for milestone achievements
+    milestone_service = MilestoneService(db)
+    milestone_service.check_milestones(current_user)
+
     return diary
 
 

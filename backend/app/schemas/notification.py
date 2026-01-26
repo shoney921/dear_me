@@ -10,6 +10,12 @@ class NotificationType(str, Enum):
     FRIEND_ACCEPTED = "friend_accepted"
     DIARY_REMINDER = "diary_reminder"
     PERSONA_UPDATED = "persona_updated"
+    # Milestone notifications
+    MILESTONE_3 = "milestone_3"  # 일기 3개 달성
+    MILESTONE_5 = "milestone_5"  # 일기 5개 달성
+    MILESTONE_7 = "milestone_7"  # 일기 7개 달성 (완전한 페르소나 생성 가능)
+    PERSONA_UPGRADE_AVAILABLE = "persona_upgrade_available"  # 페르소나 업그레이드 가능
+    PERSONA_UPGRADED = "persona_upgraded"  # 페르소나 업그레이드 완료
 
 
 class NotificationBase(BaseModel):

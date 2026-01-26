@@ -37,6 +37,7 @@ def _parse_persona_response(persona: Persona) -> dict:
         "avatar_url": persona.avatar_url,
         "is_public": persona.is_public if persona.is_public is not None else True,
         "customization": json.loads(persona.customization) if persona.customization else None,
+        "level": persona.level or "complete",
         "created_at": persona.created_at,
         "updated_at": persona.updated_at,
     }
