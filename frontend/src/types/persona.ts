@@ -5,6 +5,8 @@ export interface PersonaCustomization {
   custom_greeting?: string
 }
 
+export type PersonaLevel = 'temporary' | 'basic' | 'complete'
+
 export interface Persona {
   id: number
   user_id: number
@@ -15,6 +17,7 @@ export interface Persona {
   avatar_url?: string
   is_public: boolean
   customization?: PersonaCustomization
+  level: PersonaLevel
   created_at: string
   updated_at: string
 }

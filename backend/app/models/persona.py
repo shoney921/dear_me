@@ -23,6 +23,10 @@ class Persona(Base):
     # 커스터마이징 설정 (JSON 형태로 저장)
     customization = Column(Text, nullable=True)  # JSON: tone, emoji, traits_override, greeting
 
+    # 페르소나 레벨 시스템
+    level = Column(String(20), default="complete")  # temporary, basic, complete
+    quiz_answers = Column(Text, nullable=True)  # JSON: 성격 퀴즈 응답 저장
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { User, MessageCircle, RefreshCw, Settings, Palette } from 'lucide-react'
+import { User, MessageCircle, RefreshCw, Settings, Palette, Sparkles, TrendingUp } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { personaService } from '@/services/personaService'
 import { chatService } from '@/services/chatService'
+import { quizService } from '@/services/quizService'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Loading } from '@/components/ui/Loading'
@@ -14,6 +15,7 @@ import { PersonaSettingsModal } from '@/components/persona/PersonaSettingsModal'
 import { PersonaCustomizeModal } from '@/components/persona/PersonaCustomizeModal'
 import { MIN_DIARIES_FOR_PERSONA } from '@/lib/constants'
 import { getApiErrorMessage } from '@/lib/error'
+import { cn } from '@/lib/utils'
 
 export default function PersonaPage() {
   const navigate = useNavigate()
@@ -33,6 +35,12 @@ export default function PersonaPage() {
     retry: false,
   })
 
+  const { data: levelInfo } = useQuery({
+    queryKey: ['personaLevel'],
+    queryFn: quizService.getPersonaLevel,
+    enabled: status?.has_persona === true,
+  })
+
   const generateMutation = useMutation({
     mutationFn: personaService.generate,
     onSuccess: () => {
@@ -50,6 +58,19 @@ export default function PersonaPage() {
     onSuccess: () => {
       toast.success('페르소나가 재생성되었습니다!')
       queryClient.invalidateQueries({ queryKey: ['myPersona'] })
+      queryClient.invalidateQueries({ queryKey: ['personaLevel'] })
+    },
+    onError: (err) => {
+      toast.error(getApiErrorMessage(err))
+    },
+  })
+
+  const upgradeMutation = useMutation({
+    mutationFn: quizService.upgradePersona,
+    onSuccess: (data) => {
+      toast.success(data.message)
+      queryClient.invalidateQueries({ queryKey: ['myPersona'] })
+      queryClient.invalidateQueries({ queryKey: ['personaLevel'] })
     },
     onError: (err) => {
       toast.error(getApiErrorMessage(err))
@@ -85,11 +106,33 @@ export default function PersonaPage() {
 
     return (
       <div className="mx-auto max-w-2xl space-y-6">
+        {/* Quiz CTA Card */}
+        <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 dark:border-purple-800">
+          <CardContent className="flex flex-col items-center py-8 text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-500">
+              <Sparkles className="h-8 w-8 text-white" />
+            </div>
+            <h2 className="text-xl font-bold mb-2">성격 퀴즈로 바로 시작하기</h2>
+            <p className="text-muted-foreground mb-4 max-w-sm">
+              간단한 5가지 질문에 답하면 임시 페르소나가 바로 생성돼요!
+              <br />
+              일기를 쓰면 더 나다운 페르소나로 진화해요.
+            </p>
+            <Link to="/quiz">
+              <Button size="lg" className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
+                <Sparkles className="mr-2 h-4 w-4" />
+                퀴즈 시작하기
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* Traditional persona generation card */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              나의 페르소나
+              일기 기반 페르소나
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -115,7 +158,7 @@ export default function PersonaPage() {
             ) : (
               <>
                 <p className="text-muted-foreground">
-                  일기를 {MIN_DIARIES_FOR_PERSONA}개 이상 작성하면 나만의 AI 페르소나가 생성됩니다.
+                  또는 일기를 {MIN_DIARIES_FOR_PERSONA}개 이상 작성하면 더 정교한 AI 페르소나가 생성됩니다.
                 </p>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
@@ -131,7 +174,7 @@ export default function PersonaPage() {
                     />
                   </div>
                 </div>
-                <Button onClick={() => navigate('/diaries/new')}>
+                <Button variant="outline" onClick={() => navigate('/diaries/new')}>
                   일기 쓰러 가기
                 </Button>
               </>
@@ -156,16 +199,89 @@ export default function PersonaPage() {
     }
   }
 
+  // 레벨 배지 색상
+  const getLevelBadgeColor = (level: string) => {
+    switch (level) {
+      case 'temporary':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+      case 'basic':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+      case 'complete':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
+      {/* Level Progress Card (if not complete) */}
+      {levelInfo && levelInfo.current_level !== 'complete' && levelInfo.next_level && (
+        <Card className="border-blue-200 dark:border-blue-800">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-blue-500" />
+                <span className="font-medium">페르소나 진화</span>
+              </div>
+              <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', getLevelBadgeColor(levelInfo.current_level || ''))}>
+                {levelInfo.level_name}
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              {levelInfo.diaries_needed && levelInfo.diaries_needed > 0 ? (
+                <>일기를 <strong>{levelInfo.diaries_needed}개</strong> 더 작성하면 '{levelInfo.next_level_name}'(으)로 진화해요!</>
+              ) : (
+                <>페르소나를 '{levelInfo.next_level_name}'(으)로 진화시킬 수 있어요!</>
+              )}
+            </p>
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{levelInfo.level_name}</span>
+                <span>{levelInfo.next_level_name}</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-secondary">
+                <div
+                  className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all"
+                  style={{ width: `${levelInfo.progress_percent}%` }}
+                />
+              </div>
+            </div>
+            {levelInfo.diaries_needed === 0 && (
+              <Button
+                className="w-full mt-4"
+                onClick={() => upgradeMutation.mutate()}
+                disabled={upgradeMutation.isPending}
+              >
+                {upgradeMutation.isPending ? (
+                  <>
+                    <Loading size="sm" className="mr-2" />
+                    진화 중...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    페르소나 진화하기
+                  </>
+                )}
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
               {persona?.name}
+              {/* Level Badge */}
+              <span className={cn('ml-1 rounded-full px-2 py-0.5 text-xs font-medium', getLevelBadgeColor(persona?.level || 'complete'))}>
+                {levelInfo?.level_name || '완전한 페르소나'}
+              </span>
               {!persona?.is_public && (
-                <span className="ml-2 rounded bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
+                <span className="rounded bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
                   비공개
                 </span>
               )}

@@ -10,6 +10,7 @@ import { PageLoading } from '@/components/ui/Loading'
 import HomePage from '@/pages/HomePage'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
+import QuizPage from '@/pages/quiz/QuizPage'
 import DiaryListPage from '@/pages/diary/DiaryListPage'
 import DiaryNewPage from '@/pages/diary/DiaryNewPage'
 import DiaryDetailPage from '@/pages/diary/DiaryDetailPage'
@@ -20,6 +21,8 @@ import FriendListPage from '@/pages/friend/FriendListPage'
 import NotificationListPage from '@/pages/notification/NotificationListPage'
 import PremiumPage from '@/pages/premium/PremiumPage'
 import CharacterPage from '@/pages/character/CharacterPage'
+import PrivacyPolicyPage from '@/pages/legal/PrivacyPolicyPage'
+import TermsOfServicePage from '@/pages/legal/TermsOfServicePage'
 
 function App() {
   const { isAuthenticated, isHydrated } = useAuthStore()
@@ -56,9 +59,14 @@ function App() {
         path="/register"
         element={isAuthenticated ? <Navigate to="/" replace /> : <RegisterPage />}
       />
+      <Route path="/privacy" element={<PrivacyPolicyPage />} />
+      <Route path="/terms" element={<TermsOfServicePage />} />
 
       {/* Protected routes */}
       <Route element={<ProtectedRoute />}>
+        {/* Quiz page - without layout for fullscreen experience */}
+        <Route path="/quiz" element={<QuizPage />} />
+
         <Route element={<Layout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/diaries" element={<DiaryListPage />} />

@@ -31,7 +31,8 @@ export default function RegisterPage() {
     mutationFn: authService.register,
     onSuccess: () => {
       toast.success('회원가입이 완료되었습니다. 로그인해주세요.')
-      navigate('/login', { replace: true })
+      // Pass state to indicate this is a new user for quiz redirect
+      navigate('/login', { replace: true, state: { newUser: true } })
     },
     onError: (err) => {
       toast.error(getApiErrorMessage(err))
@@ -237,6 +238,17 @@ export default function RegisterPage() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
+            <p className="text-xs text-muted-foreground text-center">
+              회원가입 시{' '}
+              <Link to="/terms" className="text-primary hover:underline">
+                이용약관
+              </Link>
+              {' '}및{' '}
+              <Link to="/privacy" className="text-primary hover:underline">
+                개인정보처리방침
+              </Link>
+              에 동의하게 됩니다.
+            </p>
             <Button
               type="submit"
               className="w-full"
