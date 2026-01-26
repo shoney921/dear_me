@@ -1,11 +1,12 @@
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, BookOpen, Flame, Trophy, TrendingUp } from 'lucide-react'
+import { ArrowLeft, BookOpen, TrendingUp } from 'lucide-react'
 
 import { diaryService } from '@/services/diaryService'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { PageLoading } from '@/components/ui/Loading'
+import { StreakCard } from '@/components/diary/StreakCard'
 import { MOODS } from '@/lib/constants'
 
 export default function DiaryStatsPage() {
@@ -52,32 +53,21 @@ export default function DiaryStatsPage() {
         <h1 className="text-2xl font-bold">일기 통계</h1>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      {/* Streak and Badges */}
+      <StreakCard
+        currentStreak={stats.current_streak}
+        longestStreak={stats.longest_streak}
+        totalCount={stats.total_count}
+      />
+
+      {/* Additional Summary */}
+      <div className="grid grid-cols-2 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex flex-col items-center">
               <BookOpen className="h-8 w-8 text-primary" />
               <p className="mt-2 text-2xl font-bold">{stats.total_count}</p>
               <p className="text-sm text-muted-foreground">총 일기</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center">
-              <Flame className="h-8 w-8 text-orange-500" />
-              <p className="mt-2 text-2xl font-bold">{stats.current_streak}</p>
-              <p className="text-sm text-muted-foreground">연속 작성일</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center">
-              <Trophy className="h-8 w-8 text-yellow-500" />
-              <p className="mt-2 text-2xl font-bold">{stats.longest_streak}</p>
-              <p className="text-sm text-muted-foreground">최장 연속</p>
             </div>
           </CardContent>
         </Card>

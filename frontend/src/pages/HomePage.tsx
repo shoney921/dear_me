@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { BookOpen, User, Users, Plus, ChevronRight } from 'lucide-react'
+import { BookOpen, User, Users, Plus, ChevronRight, Sparkles } from 'lucide-react'
 
 import { useAuthStore } from '@/store/authStore'
 import { diaryService } from '@/services/diaryService'
@@ -8,6 +8,7 @@ import { personaService } from '@/services/personaService'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { PageLoading } from '@/components/ui/Loading'
+import { StreakCard } from '@/components/diary/StreakCard'
 import { MIN_DIARIES_FOR_PERSONA } from '@/lib/constants'
 
 export default function HomePage() {
@@ -18,12 +19,17 @@ export default function HomePage() {
     queryFn: diaryService.getCount,
   })
 
+  const { data: diaryStats, isLoading: isLoadingStats } = useQuery({
+    queryKey: ['diaryStats'],
+    queryFn: diaryService.getStats,
+  })
+
   const { data: personaStatus, isLoading: isLoadingPersona } = useQuery({
     queryKey: ['personaStatus'],
     queryFn: personaService.getStatus,
   })
 
-  if (isLoadingDiary || isLoadingPersona) {
+  if (isLoadingDiary || isLoadingPersona || isLoadingStats) {
     return <PageLoading />
   }
 
@@ -43,6 +49,16 @@ export default function HomePage() {
           오늘도 DearMe와 함께 특별한 하루를 기록해보세요.
         </p>
       </div>
+
+      {/* Streak Card */}
+      {diaryStats && diaryStats.total_count > 0 && (
+        <StreakCard
+          currentStreak={diaryStats.current_streak}
+          longestStreak={diaryStats.longest_streak}
+          totalCount={diaryStats.total_count}
+          compact
+        />
+      )}
 
       {/* Quick Actions */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -117,8 +133,26 @@ export default function HomePage() {
             </div>
           ) : (
             <div className="space-y-4">
+              {/* Quiz CTA */}
+              <div className="rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-4 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-500">
+                    <Sparkles className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">성격 퀴즈로 바로 시작!</p>
+                    <p className="text-sm text-muted-foreground">간단한 5가지 질문에 답해보세요</p>
+                  </div>
+                  <Link to="/quiz">
+                    <Button size="sm" className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
+                      시작
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+
               <p className="text-muted-foreground">
-                일기를 {MIN_DIARIES_FOR_PERSONA}개 이상 작성하면 나만의 AI 페르소나가 생성됩니다.
+                또는 일기를 {MIN_DIARIES_FOR_PERSONA}개 이상 작성하면 더 정교한 AI 페르소나가 생성됩니다.
               </p>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
@@ -136,7 +170,7 @@ export default function HomePage() {
               </div>
               {personaStatus?.can_generate && (
                 <Link to="/persona">
-                  <Button>페르소나 생성하기</Button>
+                  <Button variant="outline">페르소나 생성하기</Button>
                 </Link>
               )}
             </div>
