@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.deps import get_db
 from app.core.security import create_access_token, verify_password, get_password_hash
+from app.core.business_logger import biz_log
 from app.models.user import User
 from app.schemas.auth import Token, LoginRequest
 from app.schemas.user import UserCreate, UserResponse
@@ -74,6 +75,7 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)) -> User:
     db.commit()
     db.refresh(user)
 
+    biz_log.user_register(user.username, user.email)
     return user
 
 
@@ -81,6 +83,7 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)) -> User:
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)) -> dict:
     """로그인 (OAuth2 호환)"""
     user = _authenticate_user(db, form_data.username, form_data.password, include_www_auth=True)
+    biz_log.user_login(user.username)
     return _create_token_response(user)
 
 
@@ -88,4 +91,5 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 def login_json(login_data: LoginRequest, db: Session = Depends(get_db)) -> dict:
     """로그인 (JSON)"""
     user = _authenticate_user(db, login_data.email, login_data.password)
+    biz_log.user_login(user.username)
     return _create_token_response(user)
