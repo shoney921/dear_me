@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_db, get_current_active_user
+from app.core.business_logger import biz_log
 from app.models.notification import Notification
 from app.models.user import User
 from app.schemas.notification import (
@@ -41,6 +42,7 @@ def get_notifications(
         query.order_by(Notification.created_at.desc()).offset(skip).limit(limit).all()
     )
 
+    biz_log.notification_list(current_user.username, len(notifications))
     return NotificationListResponse(
         notifications=notifications,
         total_count=total_count,
@@ -60,6 +62,7 @@ def get_unread_count(
         .count()
     )
 
+    biz_log.notification_unread_count(current_user.username, count)
     return {"unread_count": count}
 
 
@@ -85,6 +88,7 @@ def get_notification(
             detail="Notification not found",
         )
 
+    biz_log.notification_get(current_user.username, notification_id)
     return notification
 
 
@@ -114,6 +118,7 @@ def mark_notification_read(
     db.commit()
     db.refresh(notification)
 
+    biz_log.notification_read(current_user.username, 1)
     return notification
 
 
@@ -135,6 +140,7 @@ def mark_notifications_read(
 
     db.commit()
 
+    biz_log.notification_read(current_user.username, updated)
     return NotificationMarkAllReadResponse(updated_count=updated)
 
 
@@ -155,6 +161,7 @@ def mark_all_notifications_read(
 
     db.commit()
 
+    biz_log.notification_read_all(current_user.username)
     return NotificationMarkAllReadResponse(updated_count=updated)
 
 
@@ -180,5 +187,6 @@ def delete_notification(
             detail="Notification not found",
         )
 
+    biz_log.notification_delete(current_user.username, notification_id)
     db.delete(notification)
     db.commit()

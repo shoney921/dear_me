@@ -95,6 +95,7 @@ def get_received_requests(
         data.requester = UserResponse.model_validate(req.requester)
         result.append(data)
 
+    biz_log.friend_requests_received(current_user.username, len(result))
     return result
 
 
@@ -115,6 +116,7 @@ def get_sent_requests(
         data.addressee = UserResponse.model_validate(req.addressee)
         result.append(data)
 
+    biz_log.friend_requests_sent(current_user.username, len(result))
     return result
 
 
@@ -174,6 +176,7 @@ def get_friends(
         else:
             friends.append(f.requester)
 
+    biz_log.friend_list(current_user.username, len(friends))
     return FriendListResponse(friends=friends, total=len(friends))
 
 

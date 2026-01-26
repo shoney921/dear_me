@@ -75,6 +75,7 @@ def get_diaries(
         (page - 1) * per_page
     ).limit(per_page).all()
 
+    biz_log.diary_list(current_user.username, len(diaries), page)
     return DiaryListResponse(
         items=diaries,
         total=total,
@@ -90,6 +91,7 @@ def get_diary_count(
 ):
     """내 일기 개수 조회"""
     count = db.query(Diary).filter(Diary.user_id == current_user.id).count()
+    biz_log.diary_count(current_user.username, count)
     return {"count": count}
 
 
@@ -178,6 +180,7 @@ def get_diary_stats(
     else:
         weekly_average = 0.0
 
+    biz_log.diary_stats(current_user.username, total_count)
     return DiaryStats(
         total_count=total_count,
         current_streak=current_streak,
@@ -211,6 +214,8 @@ async def get_prompt_suggestions(
         recent_diaries_text = "아직 작성된 일기가 없습니다."
 
     today_str = date.today().strftime("%Y년 %m월 %d일")
+
+    biz_log.diary_prompt_suggestions(current_user.username)
 
     # Check if OpenAI API key is available
     if not settings.OPENAI_API_KEY:
@@ -278,6 +283,7 @@ def get_diary(
             detail="Diary not found",
         )
 
+    biz_log.diary_get(current_user.username, diary_id)
     return diary
 
 

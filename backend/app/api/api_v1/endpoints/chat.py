@@ -89,6 +89,7 @@ def get_chats(
         (page - 1) * per_page
     ).limit(per_page).all()
 
+    biz_log.chat_list(current_user.username, len(chats))
     return ChatListResponse(items=chats, total=total)
 
 
@@ -110,6 +111,7 @@ def get_chat(
             detail="Chat not found",
         )
 
+    biz_log.chat_get(current_user.username, chat_id)
     return chat
 
 
@@ -168,6 +170,7 @@ def get_messages(
         ChatMessage.chat_id == chat_id,
     ).order_by(ChatMessage.created_at.asc()).limit(limit).all()
 
+    biz_log.chat_messages(current_user.username, chat_id, len(messages))
     return messages
 
 
@@ -189,5 +192,6 @@ def delete_chat(
             detail="Chat not found",
         )
 
+    biz_log.chat_delete(current_user.username, chat_id)
     db.delete(chat)
     db.commit()
