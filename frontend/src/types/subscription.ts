@@ -25,3 +25,29 @@ export interface PremiumPlanInfo {
   features: string[]
   period_days: number
 }
+
+export interface UsageDetail {
+  used: number
+  limit: number | null
+  remaining: number | null
+}
+
+export interface FriendUsageDetail {
+  count: number
+  limit: number | null
+}
+
+export interface FeatureStatus {
+  can_chat_with_friends: boolean
+  advanced_stats: boolean
+  character_styles: boolean
+  chemistry_analysis: boolean
+}
+
+export interface UsageStatusResponse {
+  is_premium: boolean
+  plan: string
+  daily_chat_messages: UsageDetail
+  friends: FriendUsageDetail
+  features: FeatureStatus
+}

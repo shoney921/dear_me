@@ -6,6 +6,7 @@ from app.models.chat import PersonaChat, ChatMessage
 from app.models.notification import Notification
 from app.models.subscription import Subscription, SubscriptionPlan, SubscriptionStatus
 from app.models.character import Character, CharacterHistory, CharacterStyle
+from app.models.usage import DailyUsage
 
 __all__ = [
     "User",
@@ -21,4 +22,5 @@ __all__ = [
     "Character",
     "CharacterHistory",
     "CharacterStyle",
+    "DailyUsage",
 ]

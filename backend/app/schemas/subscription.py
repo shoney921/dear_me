@@ -48,3 +48,33 @@ class PremiumPlanInfo(BaseModel):
     currency: str = "KRW"
     features: list[str]
     period_days: int = 30
+
+
+class UsageDetail(BaseModel):
+    """사용량 상세"""
+    used: int
+    limit: Optional[int] = None
+    remaining: Optional[int] = None
+
+
+class FriendUsageDetail(BaseModel):
+    """친구 사용량 상세"""
+    count: int
+    limit: Optional[int] = None
+
+
+class FeatureStatus(BaseModel):
+    """기능 상태"""
+    can_chat_with_friends: bool
+    advanced_stats: bool
+    character_styles: bool
+    chemistry_analysis: bool
+
+
+class UsageStatusResponse(BaseModel):
+    """사용량 현황 응답"""
+    is_premium: bool
+    plan: str
+    daily_chat_messages: UsageDetail
+    friends: FriendUsageDetail
+    features: FeatureStatus

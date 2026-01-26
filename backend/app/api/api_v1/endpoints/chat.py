@@ -17,6 +17,7 @@ from app.schemas.chat import (
     MessageResponse,
 )
 from app.services.chat_service import ChatService
+from app.services.subscription_service import SubscriptionService
 
 router = APIRouter()
 
@@ -39,8 +40,18 @@ def create_chat(
     # 자기 페르소나인지 친구 페르소나인지 확인
     is_own = persona.user_id == current_user.id
 
-    # 친구 페르소나인 경우 친구 관계 확인
+    # 친구 페르소나인 경우
     if not is_own:
+        # 구독 상태 확인 - 무료 사용자는 친구 페르소나 대화 불가
+        subscription_service = SubscriptionService(db)
+        can_chat, error_message = subscription_service.can_chat_with_friend_persona(current_user)
+        if not can_chat:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=error_message,
+            )
+
+        # 친구 관계 확인
         friendship = db.query(Friendship).filter(
             or_(
                 and_(
@@ -134,6 +145,16 @@ async def send_message(
             detail="Chat not found",
         )
 
+    # 내 페르소나와의 대화인 경우 일일 제한 확인
+    if chat.is_own_persona:
+        subscription_service = SubscriptionService(db)
+        can_send, error_message = subscription_service.can_send_chat_message(current_user)
+        if not can_send:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=error_message,
+            )
+
     # 페르소나 이름 조회
     persona = db.query(Persona).filter(Persona.id == chat.persona_id).first()
     persona_name = persona.name if persona else "Unknown"
@@ -142,6 +163,11 @@ async def send_message(
 
     chat_service = ChatService(db)
     response_message = await chat_service.send_message(chat, message_in.content)
+
+    # 메시지 전송 후 사용량 증가 (내 페르소나 대화인 경우)
+    if chat.is_own_persona:
+        subscription_service = SubscriptionService(db)
+        subscription_service.increment_chat_usage(current_user)
 
     biz_log.chat_response(persona_name, response_message.content)
     return response_message

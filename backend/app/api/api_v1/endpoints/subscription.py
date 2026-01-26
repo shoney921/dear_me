@@ -10,17 +10,12 @@ from app.schemas.subscription import (
     SubscriptionResponse,
     SubscriptionStatusResponse,
     PremiumPlanInfo,
+    UsageStatusResponse,
 )
+from app.services.subscription_service import SubscriptionService
+from app.constants.subscription import PREMIUM_FEATURES
 
 router = APIRouter()
-
-PREMIUM_FEATURES = [
-    "캐릭터 스타일 무제한 변경",
-    "친구 캐릭터 무제한 열람",
-    "케미 분석 기능",
-    "시즌 스킨 선행 접근",
-    "광고 제거",
-]
 
 
 @router.get("/me", response_model=SubscriptionResponse)
@@ -96,6 +91,16 @@ def get_available_plans():
             period_days=365,
         ),
     ]
+
+
+@router.get("/usage", response_model=UsageStatusResponse)
+def get_usage_status(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """사용량 현황 조회"""
+    subscription_service = SubscriptionService(db)
+    return subscription_service.get_usage_status(current_user)
 
 
 @router.post("/upgrade", response_model=SubscriptionResponse)

@@ -3,6 +3,7 @@ import type {
   Subscription,
   SubscriptionStatusResponse,
   PremiumPlanInfo,
+  UsageStatusResponse,
 } from '@/types/subscription'
 
 export const subscriptionService = {
@@ -28,6 +29,11 @@ export const subscriptionService = {
 
   async cancel(): Promise<Subscription> {
     const response = await api.post<Subscription>('/subscriptions/cancel')
+    return response.data
+  },
+
+  async getUsageStatus(): Promise<UsageStatusResponse> {
+    const response = await api.get<UsageStatusResponse>('/subscriptions/usage')
     return response.data
   },
 }
