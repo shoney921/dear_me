@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { ChevronLeft, ChevronRight, Sparkles, Check } from 'lucide-react'
 
@@ -14,6 +14,7 @@ import type { QuizAnswer } from '@/types/quiz'
 
 export default function QuizPage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [currentStep, setCurrentStep] = useState(0) // 0 = intro, 1-5 = questions, 6 = submitting
   const [answers, setAnswers] = useState<Map<number, string>>(new Map())
 
@@ -26,6 +27,10 @@ export default function QuizPage() {
     mutationFn: quizService.submitQuiz,
     onSuccess: (data) => {
       toast.success(data.message)
+      // 페르소나 관련 캐시 무효화
+      queryClient.invalidateQueries({ queryKey: ['personaStatus'] })
+      queryClient.invalidateQueries({ queryKey: ['myPersona'] })
+      queryClient.invalidateQueries({ queryKey: ['personaLevel'] })
       navigate('/persona', { replace: true })
     },
     onError: (err) => {
