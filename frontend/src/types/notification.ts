@@ -3,6 +3,11 @@ export type NotificationType =
   | 'friend_accepted'
   | 'diary_reminder'
   | 'persona_updated'
+  | 'milestone_3'
+  | 'milestone_5'
+  | 'milestone_7'
+  | 'persona_upgrade_available'
+  | 'persona_upgraded'
 
 export interface Notification {
   id: number

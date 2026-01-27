@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Crown, Check, Sparkles } from 'lucide-react'
+import { Crown, Check, Sparkles, MessageCircle, Users, Lock } from 'lucide-react'
 
 import { subscriptionService } from '@/services/subscriptionService'
 import { Button } from '@/components/ui/Button'
@@ -17,6 +17,11 @@ export default function PremiumPage() {
     queryFn: subscriptionService.getStatus,
   })
 
+  const { data: usageStatus, isLoading: isLoadingUsage } = useQuery({
+    queryKey: ['usageStatus'],
+    queryFn: subscriptionService.getUsageStatus,
+  })
+
   const { data: plans, isLoading: isLoadingPlans } = useQuery({
     queryKey: ['subscriptionPlans'],
     queryFn: subscriptionService.getPlans,
@@ -27,6 +32,7 @@ export default function PremiumPage() {
     onSuccess: () => {
       setError('')
       queryClient.invalidateQueries({ queryKey: ['subscriptionStatus'] })
+      queryClient.invalidateQueries({ queryKey: ['usageStatus'] })
       queryClient.invalidateQueries({ queryKey: ['mySubscription'] })
     },
     onError: (err) => {
@@ -39,6 +45,7 @@ export default function PremiumPage() {
     onSuccess: () => {
       setError('')
       queryClient.invalidateQueries({ queryKey: ['subscriptionStatus'] })
+      queryClient.invalidateQueries({ queryKey: ['usageStatus'] })
       queryClient.invalidateQueries({ queryKey: ['mySubscription'] })
     },
     onError: (err) => {
@@ -46,7 +53,7 @@ export default function PremiumPage() {
     },
   })
 
-  if (isLoadingStatus || isLoadingPlans) {
+  if (isLoadingStatus || isLoadingPlans || isLoadingUsage) {
     return <PageLoading />
   }
 
@@ -89,6 +96,80 @@ export default function PremiumPage() {
         </CardContent>
       </Card>
 
+      {/* 사용량 현황 (무료 사용자만) */}
+      {!isPremium && usageStatus && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">오늘의 사용량</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* 일일 대화 횟수 */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="h-5 w-5 text-primary" />
+                <span>일일 대화</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-24 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full bg-primary transition-all"
+                    style={{
+                      width: `${Math.min((usageStatus.daily_chat_messages.used / (usageStatus.daily_chat_messages.limit || 5)) * 100, 100)}%`,
+                    }}
+                  />
+                </div>
+                <span className="text-sm text-muted-foreground">
+                  {usageStatus.daily_chat_messages.used}/{usageStatus.daily_chat_messages.limit}회
+                </span>
+              </div>
+            </div>
+
+            {/* 친구 수 */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                <span>친구</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-24 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full bg-primary transition-all"
+                    style={{
+                      width: `${Math.min((usageStatus.friends.count / (usageStatus.friends.limit || 3)) * 100, 100)}%`,
+                    }}
+                  />
+                </div>
+                <span className="text-sm text-muted-foreground">
+                  {usageStatus.friends.count}/{usageStatus.friends.limit}명
+                </span>
+              </div>
+            </div>
+
+            {/* 잠긴 기능 */}
+            <div className="mt-4 rounded-lg bg-muted/50 p-3">
+              <p className="mb-2 flex items-center gap-1 text-sm font-medium">
+                <Lock className="h-4 w-4" />
+                프리미엄 전용 기능
+              </p>
+              <ul className="space-y-1 text-sm text-muted-foreground">
+                {!usageStatus.features.can_chat_with_friends && (
+                  <li>• 친구 페르소나와 대화</li>
+                )}
+                {!usageStatus.features.advanced_stats && (
+                  <li>• 상세 감정 분석 리포트</li>
+                )}
+                {!usageStatus.features.character_styles && (
+                  <li>• 캐릭터 스타일 변경</li>
+                )}
+                {!usageStatus.features.chemistry_analysis && (
+                  <li>• 케미 분석</li>
+                )}
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {error && (
         <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
           {error}
@@ -112,6 +193,11 @@ export default function PremiumPage() {
                   {index === 0 && (
                     <span className="rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
                       추천
+                    </span>
+                  )}
+                  {index === 1 && (
+                    <span className="rounded-full bg-green-500 px-2 py-0.5 text-xs text-white">
+                      32% 할인
                     </span>
                   )}
                 </CardTitle>
@@ -165,27 +251,27 @@ export default function PremiumPage() {
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <h4 className="font-semibold">캐릭터 스타일 변경</h4>
+              <h4 className="font-semibold">무제한 페르소나 대화</h4>
               <p className="text-sm text-muted-foreground">
-                수채화, 픽셀 아트, 3D 등 다양한 스타일로 캐릭터를 변경할 수 있습니다.
+                일일 대화 횟수 제한 없이 페르소나와 자유롭게 대화할 수 있습니다.
               </p>
             </div>
             <div className="space-y-2">
-              <h4 className="font-semibold">친구 캐릭터 무제한 열람</h4>
+              <h4 className="font-semibold">친구 페르소나 대화</h4>
               <p className="text-sm text-muted-foreground">
-                친구들의 캐릭터를 제한 없이 열람할 수 있습니다.
+                친구의 페르소나와 대화할 수 있는 프리미엄 전용 기능입니다.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <h4 className="font-semibold">상세 감정 분석 리포트</h4>
+              <p className="text-sm text-muted-foreground">
+                AI가 일기를 분석하여 상세한 감정 변화 리포트를 제공합니다.
               </p>
             </div>
             <div className="space-y-2">
               <h4 className="font-semibold">케미 분석</h4>
               <p className="text-sm text-muted-foreground">
-                AI가 친구와의 케미를 분석해드립니다.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <h4 className="font-semibold">시즌 스킨 선행 접근</h4>
-              <p className="text-sm text-muted-foreground">
-                새로운 시즌 스킨을 먼저 만나보세요.
+                친구와의 케미를 AI가 분석해 재미있는 인사이트를 제공합니다.
               </p>
             </div>
           </div>

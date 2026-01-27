@@ -5,7 +5,11 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.constants.prompts import PERSONA_CHAT_PROMPT, FRIEND_PERSONA_CHAT_PROMPT
+from app.constants.prompts import (
+    PERSONA_CHAT_PROMPT,
+    FRIEND_PERSONA_CHAT_PROMPT,
+    TEMPORARY_PERSONA_CHAT_PROMPT,
+)
 from app.models.chat import PersonaChat, ChatMessage
 from app.models.persona import Persona
 
@@ -102,14 +106,25 @@ class ChatService:
 
             # 프롬프트 선택
             if is_own_persona:
-                prompt = PERSONA_CHAT_PROMPT.format(
-                    persona_name=persona.name,
-                    personality=persona.personality,
-                    traits=traits_str,
-                    speaking_style=persona.speaking_style or "",
-                    chat_history=history_text,
-                    user_message=user_message,
-                )
+                # 임시 페르소나인 경우 별도 프롬프트 사용
+                if persona.level == "temporary":
+                    prompt = TEMPORARY_PERSONA_CHAT_PROMPT.format(
+                        persona_name=persona.name,
+                        personality=persona.personality,
+                        traits=traits_str,
+                        speaking_style=persona.speaking_style or "",
+                        chat_history=history_text,
+                        user_message=user_message,
+                    )
+                else:
+                    prompt = PERSONA_CHAT_PROMPT.format(
+                        persona_name=persona.name,
+                        personality=persona.personality,
+                        traits=traits_str,
+                        speaking_style=persona.speaking_style or "",
+                        chat_history=history_text,
+                        user_message=user_message,
+                    )
             else:
                 # 친구 페르소나인 경우
                 owner = persona.user

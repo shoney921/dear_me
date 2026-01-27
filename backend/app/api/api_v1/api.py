@@ -10,6 +10,7 @@ from app.api.api_v1.endpoints import (
     notification,
     subscription,
     character,
+    quiz,
 )
 
 api_router = APIRouter()
@@ -23,3 +24,4 @@ api_router.include_router(chat.router, prefix="/chats", tags=["chats"])
 api_router.include_router(notification.router, prefix="/notifications", tags=["notifications"])
 api_router.include_router(subscription.router, prefix="/subscriptions", tags=["subscriptions"])
 api_router.include_router(character.router, prefix="/characters", tags=["characters"])
+api_router.include_router(quiz.router, prefix="/quiz", tags=["quiz"])

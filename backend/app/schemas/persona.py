@@ -30,6 +30,7 @@ class PersonaResponse(PersonaBase):
     user_id: int
     is_public: bool = True
     customization: Optional[PersonaCustomization] = None
+    level: str = "complete"  # temporary, basic, complete
     created_at: datetime
     updated_at: datetime
 
