@@ -50,8 +50,8 @@ class MilestoneService:
         created_notifications = []
 
         for milestone_count, milestone_info in MILESTONES.items():
-            # Check if user just reached this milestone
-            if diary_count == milestone_count:
+            # Check if user has reached or passed this milestone
+            if diary_count >= milestone_count:
                 # Check if notification already exists for this milestone
                 existing = self.db.query(Notification).filter(
                     Notification.user_id == user.id,

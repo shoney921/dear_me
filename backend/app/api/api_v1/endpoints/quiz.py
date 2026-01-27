@@ -105,7 +105,7 @@ async def submit_quiz(
         )
 
     except Exception as e:
-        logger.error(f"Quiz persona generation failed: {e}")
+        logger.exception(f"Quiz persona generation failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to generate persona. Please try again.",
@@ -179,7 +179,7 @@ async def upgrade_persona(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Persona upgrade failed: {e}")
+        logger.exception(f"Persona upgrade failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to upgrade persona. Please try again.",

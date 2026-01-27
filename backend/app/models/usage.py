@@ -1,6 +1,6 @@
 from datetime import datetime, date
 
-from sqlalchemy import Column, Date, ForeignKey, Integer
+from sqlalchemy import Column, Date, ForeignKey, Integer, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -17,7 +17,7 @@ class DailyUsage(Base):
 
     # Unique constraint: 한 유저당 하루에 하나의 레코드
     __table_args__ = (
-        {'sqlite_autoincrement': True},
+        UniqueConstraint('user_id', 'usage_date', name='uq_daily_usage_user_date'),
     )
 
     # Relationships

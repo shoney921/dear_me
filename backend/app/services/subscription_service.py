@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from typing import Optional
 
 from sqlalchemy.orm import Session
@@ -27,7 +27,7 @@ class SubscriptionService:
         return (
             subscription.plan == SubscriptionPlan.PREMIUM
             and subscription.status == SubscriptionStatus.ACTIVE
-            and (subscription.expires_at is None or subscription.expires_at > datetime.utcnow())
+            and (subscription.expires_at is None or subscription.expires_at > datetime.now(timezone.utc))
         )
 
     def get_plan_limits(self, user: User) -> dict:
@@ -48,23 +48,38 @@ class SubscriptionService:
 
     def increment_chat_usage(self, user: User) -> int:
         """채팅 사용량 증가 및 현재 사용량 반환"""
+        from sqlalchemy.exc import IntegrityError
+
         today = date.today()
+
+        # with_for_update()로 레코드 락 획득 (race condition 방지)
         usage = self.db.query(DailyUsage).filter(
             DailyUsage.user_id == user.id,
             DailyUsage.usage_date == today,
-        ).first()
+        ).with_for_update().first()
 
         if not usage:
-            usage = DailyUsage(
-                user_id=user.id,
-                usage_date=today,
-                chat_messages=1,
-            )
-            self.db.add(usage)
+            try:
+                usage = DailyUsage(
+                    user_id=user.id,
+                    usage_date=today,
+                    chat_messages=1,
+                )
+                self.db.add(usage)
+                self.db.commit()
+            except IntegrityError:
+                # 동시 요청으로 이미 레코드가 생성된 경우
+                self.db.rollback()
+                usage = self.db.query(DailyUsage).filter(
+                    DailyUsage.user_id == user.id,
+                    DailyUsage.usage_date == today,
+                ).with_for_update().first()
+                usage.chat_messages += 1
+                self.db.commit()
         else:
             usage.chat_messages += 1
+            self.db.commit()
 
-        self.db.commit()
         return usage.chat_messages
 
     def can_send_chat_message(self, user: User) -> tuple[bool, Optional[str]]:

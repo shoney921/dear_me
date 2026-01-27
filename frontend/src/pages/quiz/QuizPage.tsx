@@ -35,7 +35,9 @@ export default function QuizPage() {
     },
     onError: (err) => {
       toast.error(getApiErrorMessage(err))
-      setCurrentStep(5) // Go back to last question
+      // 마지막 질문으로 돌아가기 (질문 수에 맞게 동적 처리)
+      const totalQuestions = quizData?.questions?.length || 5
+      setCurrentStep(totalQuestions)
     },
   })
 
