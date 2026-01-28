@@ -23,6 +23,7 @@ import PremiumPage from '@/pages/premium/PremiumPage'
 import CharacterPage from '@/pages/character/CharacterPage'
 import PrivacyPolicyPage from '@/pages/legal/PrivacyPolicyPage'
 import TermsOfServicePage from '@/pages/legal/TermsOfServicePage'
+import { MentalDashboardPage, BookRecommendationPage, MentalReportPage } from '@/pages/mental'
 
 function App() {
   const { isAuthenticated, isHydrated } = useAuthStore()
@@ -80,6 +81,9 @@ function App() {
           <Route path="/notifications" element={<NotificationListPage />} />
           <Route path="/premium" element={<PremiumPage />} />
           <Route path="/character" element={<CharacterPage />} />
+          <Route path="/mental" element={<MentalDashboardPage />} />
+          <Route path="/mental/books" element={<BookRecommendationPage />} />
+          <Route path="/mental/reports" element={<MentalReportPage />} />
         </Route>
       </Route>
 
