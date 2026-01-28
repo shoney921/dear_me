@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { BookOpen, User, Users, Plus, ChevronRight, Sparkles } from 'lucide-react'
+import { BookOpen, User, Users, Plus, ChevronRight, Sparkles, Brain } from 'lucide-react'
 
 import { useAuthStore } from '@/store/authStore'
 import { diaryService } from '@/services/diaryService'
@@ -106,6 +106,22 @@ export default function HomePage() {
               <div className="flex-1">
                 <h3 className="font-semibold">친구</h3>
                 <p className="text-sm text-muted-foreground">친구와 소통하세요</p>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* Mental Care */}
+        <Link to="/mental">
+          <Card className="cursor-pointer transition-shadow hover:shadow-md">
+            <CardContent className="flex items-center gap-4 p-6">
+              <div className="rounded-full bg-indigo-500/10 p-3">
+                <Brain className="h-6 w-6 text-indigo-500" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold">심리 케어</h3>
+                <p className="text-sm text-muted-foreground">마음 상태 확인하기</p>
               </div>
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </CardContent>

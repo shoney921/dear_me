@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Lightbulb, RefreshCw } from 'lucide-react'
@@ -24,6 +24,17 @@ export default function DiaryNewPage() {
     new Date().toISOString().split('T')[0]
   )
 
+  // 날짜 제한: 오늘부터 3일 전까지만 허용
+  const { minDate, maxDate } = useMemo(() => {
+    const today = new Date()
+    const min = new Date(today)
+    min.setDate(today.getDate() - 3)
+    return {
+      minDate: min.toISOString().split('T')[0],
+      maxDate: today.toISOString().split('T')[0],
+    }
+  }, [])
+
   const { data: suggestions, isLoading: isSuggestionsLoading, refetch: refetchSuggestions } = useQuery({
     queryKey: ['diaryPromptSuggestions'],
     queryFn: () => diaryService.getPromptSuggestions(),
@@ -36,7 +47,10 @@ export default function DiaryNewPage() {
       queryClient.invalidateQueries({ queryKey: ['diaries'] })
       queryClient.invalidateQueries({ queryKey: ['diaryCount'] })
       queryClient.invalidateQueries({ queryKey: ['personaStatus'] })
-      toast.success('일기가 저장되었습니다.')
+      queryClient.invalidateQueries({ queryKey: ['mentalCurrent'] })
+      queryClient.invalidateQueries({ queryKey: ['mentalRadar'] })
+      queryClient.invalidateQueries({ queryKey: ['mentalHistory'] })
+      toast.success('일기가 저장되었습니다. 심리 분석이 완료되면 심리 케어에서 확인할 수 있어요!')
       navigate('/diaries')
     },
     onError: (err) => {
@@ -46,6 +60,13 @@ export default function DiaryNewPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+
+    // 날짜 유효성 검증
+    if (diaryDate < minDate || diaryDate > maxDate) {
+      toast.error('오늘부터 3일 전까지의 일기만 작성할 수 있습니다.')
+      return
+    }
+
     createMutation.mutate({
       title,
       content,
@@ -132,8 +153,13 @@ export default function DiaryNewPage() {
                 type="date"
                 value={diaryDate}
                 onChange={(e) => setDiaryDate(e.target.value)}
+                min={minDate}
+                max={maxDate}
                 required
               />
+              <p className="text-xs text-muted-foreground">
+                오늘부터 3일 전까지의 일기만 작성할 수 있습니다.
+              </p>
             </div>
 
             {/* Title */}

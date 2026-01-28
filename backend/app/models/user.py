@@ -32,3 +32,9 @@ class User(Base):
     character = relationship(
         "Character", back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
+    mental_analyses = relationship(
+        "MentalAnalysis", back_populates="user", cascade="all, delete-orphan"
+    )
+    mental_reports = relationship(
+        "MentalReport", back_populates="user", cascade="all, delete-orphan"
+    )

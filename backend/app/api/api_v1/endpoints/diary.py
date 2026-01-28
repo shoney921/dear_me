@@ -16,6 +16,7 @@ from app.models.user import User
 from app.schemas.diary import DiaryCreate, DiaryResponse, DiaryUpdate, DiaryListResponse, DiaryStats, DiaryPromptSuggestionResponse
 from app.constants.prompts import DIARY_PROMPT_SUGGESTION
 from app.services.milestone_service import MilestoneService
+from app.services.mental_service import MentalService
 
 logger = logging.getLogger(__name__)
 
@@ -23,12 +24,28 @@ router = APIRouter()
 
 
 @router.post("", response_model=DiaryResponse, status_code=status.HTTP_201_CREATED)
-def create_diary(
+async def create_diary(
     diary_in: DiaryCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """일기 작성"""
+    today = date.today()
+    min_date = today - timedelta(days=3)
+
+    # 날짜 제한 검증: 미래 날짜 불가, 과거 3일까지만 허용
+    if diary_in.diary_date > today:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot write diary for future dates",
+        )
+
+    if diary_in.diary_date < min_date:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot write diary for dates older than 3 days",
+        )
+
     # 같은 날짜에 이미 일기가 있는지 확인
     existing = db.query(Diary).filter(
         Diary.user_id == current_user.id,
@@ -58,6 +75,14 @@ def create_diary(
     # Check for milestone achievements
     milestone_service = MilestoneService(db)
     milestone_service.check_milestones(current_user)
+
+    # 멘탈 분석 자동 실행 (백그라운드에서 처리)
+    try:
+        mental_service = MentalService(db)
+        await mental_service.analyze_diary(current_user, diary)
+        logger.info(f"Mental analysis completed for diary {diary.id}")
+    except Exception as e:
+        logger.warning(f"Mental analysis failed for diary {diary.id}: {e}")
 
     return diary
 
@@ -294,7 +319,7 @@ def get_diary(
 
 
 @router.patch("/{diary_id}", response_model=DiaryResponse)
-def update_diary(
+async def update_diary(
     diary_id: int,
     diary_update: DiaryUpdate,
     db: Session = Depends(get_db),
@@ -320,6 +345,20 @@ def update_diary(
     db.refresh(diary)
 
     biz_log.diary_update(current_user.username, diary_id)
+
+    # 일기 수정 시 멘탈 분석 재실행
+    try:
+        from app.models.mental_analysis import MentalAnalysis
+        # 기존 분석 삭제
+        db.query(MentalAnalysis).filter(MentalAnalysis.diary_id == diary.id).delete()
+        db.commit()
+
+        mental_service = MentalService(db)
+        await mental_service.analyze_diary(current_user, diary)
+        logger.info(f"Mental analysis re-run for updated diary {diary.id}")
+    except Exception as e:
+        logger.warning(f"Mental analysis failed for updated diary {diary.id}: {e}")
+
     return diary
 
 
