@@ -68,6 +68,8 @@ function translateErrorDetail(detail: string | Array<{ msg: string }> | undefine
     'Email already registered': '이미 등록된 이메일입니다.',
     'Username already taken': '이미 사용 중인 사용자명입니다.',
     'Diary already exists for this date': '해당 날짜에 이미 일기가 존재합니다.',
+    'Cannot write diary for future dates': '미래 날짜에는 일기를 작성할 수 없습니다.',
+    'Cannot write diary for dates older than 3 days': '3일 이전의 날짜에는 일기를 작성할 수 없습니다.',
     'Diary not found': '일기를 찾을 수 없습니다.',
     'Persona not found': '페르소나를 찾을 수 없습니다.',
     'Persona already exists': '이미 페르소나가 존재합니다.',
