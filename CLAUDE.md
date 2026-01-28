@@ -143,6 +143,17 @@
 | POST | `/api/v1/notifications/mark-all-read` | 모든 알림 읽음 처리 |
 | DELETE | `/api/v1/notifications/{id}` | 알림 삭제 |
 
+### 심리 케어 (Mental)
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/api/v1/mental/current` | 최근 멘탈 상태 조회 |
+| GET | `/api/v1/mental/radar` | 레이더 차트 데이터 |
+| GET | `/api/v1/mental/history` | 분석 이력 조회 |
+| GET | `/api/v1/mental/reports/weekly` | 주간 리포트 |
+| GET | `/api/v1/mental/reports/monthly` | 월간 리포트 |
+| POST | `/api/v1/mental/feedback` | 피드백 생성 |
+| GET | `/api/v1/mental/book-recommendations` | 책 추천 조회 |
+
 ---
 
 ## 사용자 시나리오
@@ -315,11 +326,11 @@ raise HTTPException(status_code=400, detail="Error message")
 | 문서 | 설명 | 참고 시점 |
 |------|------|----------|
 | [docs/RPD.md](docs/RPD.md) | 전체 요구사항 및 설계 | 프로젝트 전체 이해 |
-| [docs/TECH_STACK.md](docs/TECH_STACK.md) | 기술 스택 상세 | 패키지 설치 시 |
-| [docs/DIRECTORY.md](docs/DIRECTORY.md) | 디렉토리 구조 | 파일 생성 시 |
-| [docs/INFRASTRUCTURE.md](docs/INFRASTRUCTURE.md) | Docker/배포 설정 | 인프라 구성 시 |
-| [docs/API_SPEC.md](docs/API_SPEC.md) | API 엔드포인트 명세 | API 구현 시 |
-| [docs/AI_PROMPTS.md](docs/AI_PROMPTS.md) | LLM 프롬프트 설계 | AI 서비스 구현 시 |
+| [docs/core/TECH_STACK.md](docs/core/TECH_STACK.md) | 기술 스택 상세 | 패키지 설치 시 |
+| [docs/core/DIRECTORY.md](docs/core/DIRECTORY.md) | 디렉토리 구조 | 파일 생성 시 |
+| [docs/core/INFRASTRUCTURE.md](docs/core/INFRASTRUCTURE.md) | Docker/배포 설정 | 인프라 구성 시 |
+| [docs/core/AI_PROMPTS.md](docs/core/AI_PROMPTS.md) | LLM 프롬프트 설계 | AI 서비스 구현 시 |
+| [docs/future/MONETIZATION_ROADMAP.md](docs/future/MONETIZATION_ROADMAP.md) | 수익화 로드맵 | 후순위 기능 참조 |
 
 ---
 
@@ -355,7 +366,15 @@ raise HTTPException(status_code=400, detail="Error message")
 - [x] 일기 수정 기능
 - [x] AI 일기 프롬프트 제안
 
-### Phase 4: 수익화 (예정)
+### Phase 4: 심리 케어 (진행 중)
+- [ ] 멘탈 상태 분석 시스템
+- [ ] 심리 인바디 체크 (6축 레이더 차트)
+- [ ] 감정 기반 피드백
+- [ ] 책 추천 기능
+- [ ] 주간/월간 리포트
+
+### Phase 5: 수익화 (후순위)
+> 상세 내용은 `docs/future/MONETIZATION_ROADMAP.md` 참조
 - [ ] 멀티모달 캐릭터 생성
 - [ ] 캐릭터 스타일 변경
 - [ ] 프리미엄 구독 시스템
