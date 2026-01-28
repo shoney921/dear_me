@@ -11,6 +11,7 @@ from app.api.api_v1.endpoints import (
     subscription,
     character,
     quiz,
+    mental,
 )
 
 api_router = APIRouter()
@@ -25,3 +26,4 @@ api_router.include_router(notification.router, prefix="/notifications", tags=["n
 api_router.include_router(subscription.router, prefix="/subscriptions", tags=["subscriptions"])
 api_router.include_router(character.router, prefix="/characters", tags=["characters"])
 api_router.include_router(quiz.router, prefix="/quiz", tags=["quiz"])
+api_router.include_router(mental.router, prefix="/mental", tags=["mental"])

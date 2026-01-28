@@ -21,3 +21,6 @@ class Diary(Base):
 
     # Relationships
     user = relationship("User", back_populates="diaries")
+    mental_analysis = relationship(
+        "MentalAnalysis", back_populates="diary", uselist=False, cascade="all, delete-orphan"
+    )
