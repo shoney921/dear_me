@@ -159,7 +159,6 @@ class SubscriptionService:
             "features": {
                 "can_chat_with_friends": limits.get("can_chat_with_friends"),
                 "advanced_stats": limits.get("advanced_stats"),
-                "character_styles": limits.get("character_styles"),
                 "chemistry_analysis": limits.get("chemistry_analysis"),
             },
         }

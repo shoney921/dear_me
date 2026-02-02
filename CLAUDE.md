@@ -329,6 +329,7 @@ raise HTTPException(status_code=400, detail="Error message")
 | [docs/core/TECH_STACK.md](docs/core/TECH_STACK.md) | 기술 스택 상세 | 패키지 설치 시 |
 | [docs/core/DIRECTORY.md](docs/core/DIRECTORY.md) | 디렉토리 구조 | 파일 생성 시 |
 | [docs/core/INFRASTRUCTURE.md](docs/core/INFRASTRUCTURE.md) | Docker/배포 설정 | 인프라 구성 시 |
+| [docs/core/SCALING_STRATEGY.md](docs/core/SCALING_STRATEGY.md) | 스케일링 전략 | 성능 최적화 시 |
 | [docs/core/AI_PROMPTS.md](docs/core/AI_PROMPTS.md) | LLM 프롬프트 설계 | AI 서비스 구현 시 |
 | [docs/future/MONETIZATION_ROADMAP.md](docs/future/MONETIZATION_ROADMAP.md) | 수익화 로드맵 | 후순위 기능 참조 |
 
@@ -375,10 +376,8 @@ raise HTTPException(status_code=400, detail="Error message")
 
 ### Phase 5: 수익화 (후순위)
 > 상세 내용은 `docs/future/MONETIZATION_ROADMAP.md` 참조
-- [ ] 멀티모달 캐릭터 생성
-- [ ] 캐릭터 스타일 변경
 - [ ] 프리미엄 구독 시스템
-- [ ] 굿즈 제작 연동
+- [ ] 케미 분석 기능
 
 ---
 

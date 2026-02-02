@@ -55,9 +55,9 @@ class MentalService:
             return self._get_default_analysis()
 
         try:
-            from openai import OpenAI
+            from openai import AsyncOpenAI
 
-            client = OpenAI(api_key=settings.OPENAI_API_KEY)
+            client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
             prompt = MENTAL_ANALYSIS_PROMPT.format(
                 diary_date=str(diary.diary_date),
@@ -67,7 +67,7 @@ class MentalService:
                 content=diary.content,
             )
 
-            response = client.chat.completions.create(
+            response = await client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {
@@ -107,10 +107,13 @@ class MentalService:
         ).order_by(MentalAnalysis.created_at.desc()).first()
 
     def get_radar_data(self, user_id: int) -> dict:
-        """레이더 차트 데이터 조회"""
-        current = self.get_current_analysis(user_id)
+        """레이더 차트 데이터 조회 (최적화된 단일 쿼리)"""
+        # 최근 2개의 분석을 한 번에 조회
+        analyses = self.db.query(MentalAnalysis).filter(
+            MentalAnalysis.user_id == user_id
+        ).order_by(MentalAnalysis.created_at.desc()).limit(2).all()
 
-        if not current:
+        if not analyses:
             return {
                 "current": {
                     "stress": 50,
@@ -124,11 +127,8 @@ class MentalService:
                 "trend": TrendType.STABLE.value,
             }
 
-        # 이전 분석 (현재 제외하고 가장 최근)
-        previous = self.db.query(MentalAnalysis).filter(
-            MentalAnalysis.user_id == user_id,
-            MentalAnalysis.id != current.id
-        ).order_by(MentalAnalysis.created_at.desc()).first()
+        current = analyses[0]
+        previous = analyses[1] if len(analyses) > 1 else None
 
         current_data = {
             "stress": current.stress_score,
@@ -223,9 +223,9 @@ class MentalService:
             return self._get_default_feedback(analysis.overall_status)
 
         try:
-            from openai import OpenAI
+            from openai import AsyncOpenAI
 
-            client = OpenAI(api_key=settings.OPENAI_API_KEY)
+            client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
             prompt = FEEDBACK_GENERATION_PROMPT.format(
                 stress_score=analysis.stress_score,
@@ -237,7 +237,7 @@ class MentalService:
                 overall_status=analysis.overall_status,
             )
 
-            response = client.chat.completions.create(
+            response = await client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {
@@ -313,9 +313,9 @@ class MentalService:
             return self._get_default_books(analysis.overall_status)
 
         try:
-            from openai import OpenAI
+            from openai import AsyncOpenAI
 
-            client = OpenAI(api_key=settings.OPENAI_API_KEY)
+            client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
             prompt = BOOK_RECOMMENDATION_PROMPT.format(
                 overall_status=analysis.overall_status,
@@ -327,7 +327,7 @@ class MentalService:
                 social_connection_score=analysis.social_connection_score,
             )
 
-            response = client.chat.completions.create(
+            response = await client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {
@@ -621,9 +621,9 @@ class MentalService:
             return self._get_default_insights(trend)
 
         try:
-            from openai import OpenAI
+            from openai import AsyncOpenAI
 
-            client = OpenAI(api_key=settings.OPENAI_API_KEY)
+            client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
             prompt = MENTAL_REPORT_INSIGHTS_PROMPT.format(
                 report_type=report_type,
@@ -639,7 +639,7 @@ class MentalService:
                 trend=trend,
             )
 
-            response = client.chat.completions.create(
+            response = await client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {

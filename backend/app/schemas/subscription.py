@@ -67,7 +67,6 @@ class FeatureStatus(BaseModel):
     """기능 상태"""
     can_chat_with_friends: bool
     advanced_stats: bool
-    character_styles: bool
     chemistry_analysis: bool
 
 

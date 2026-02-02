@@ -39,3 +39,19 @@ class FriendshipWithUser(FriendshipResponse):
 class FriendListResponse(BaseModel):
     friends: list[UserResponse]
     total: int
+
+
+class FriendWithPersonaResponse(BaseModel):
+    id: int
+    username: str
+    email: str
+    profile_image: Optional[str] = None
+    persona_name: Optional[str] = None
+    persona_id: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+
+class FriendRecommendationResponse(BaseModel):
+    users: list[FriendWithPersonaResponse]

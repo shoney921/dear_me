@@ -41,8 +41,14 @@ async def get_current_mental_status(
             detail="No mental analysis found. Write a diary first.",
         )
 
-    # 피드백 생성
-    feedback = await mental_service.generate_feedback(analysis)
+    # 저장된 피드백이 있으면 사용, 없으면 생성 (하위 호환성)
+    if analysis.feedback_json:
+        feedback = json.loads(analysis.feedback_json)
+    else:
+        feedback = await mental_service.generate_feedback(analysis)
+        # 생성한 피드백을 저장 (다음 번 조회 시 재사용)
+        analysis.feedback_json = json.dumps(feedback, ensure_ascii=False)
+        db.commit()
 
     return MentalAnalysisWithFeedback(
         id=analysis.id,

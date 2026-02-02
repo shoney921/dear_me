@@ -32,6 +32,7 @@ class MentalAnalysis(Base):
     # 종합 상태
     overall_status = Column(String(20), default=OverallStatus.NEUTRAL.value)
     ai_analysis_raw = Column(Text, nullable=True)  # JSON 형태의 AI 분석 원본
+    feedback_json = Column(Text, nullable=True)  # JSON 형태의 사전 생성된 피드백
 
     analysis_date = Column(Date, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)

@@ -76,11 +76,17 @@ async def create_diary(
     milestone_service = MilestoneService(db)
     milestone_service.check_milestones(current_user)
 
-    # 멘탈 분석 자동 실행 (백그라운드에서 처리)
+    # 멘탈 분석 + 피드백 자동 생성 (일기 작성 시 미리 처리)
     try:
         mental_service = MentalService(db)
-        await mental_service.analyze_diary(current_user, diary)
-        logger.info(f"Mental analysis completed for diary {diary.id}")
+        analysis = await mental_service.analyze_diary(current_user, diary)
+
+        # 피드백도 함께 생성하여 저장
+        feedback = await mental_service.generate_feedback(analysis)
+        analysis.feedback_json = json.dumps(feedback, ensure_ascii=False)
+        db.commit()
+
+        logger.info(f"Mental analysis and feedback completed for diary {diary.id}")
     except Exception as e:
         logger.warning(f"Mental analysis failed for diary {diary.id}: {e}")
 

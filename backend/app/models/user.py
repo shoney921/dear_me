@@ -29,9 +29,6 @@ class User(Base):
     subscription = relationship(
         "Subscription", back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
-    character = relationship(
-        "Character", back_populates="user", uselist=False, cascade="all, delete-orphan"
-    )
     mental_analyses = relationship(
         "MentalAnalysis", back_populates="user", cascade="all, delete-orphan"
     )

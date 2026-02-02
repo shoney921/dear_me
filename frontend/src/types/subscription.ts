@@ -40,7 +40,6 @@ export interface FriendUsageDetail {
 export interface FeatureStatus {
   can_chat_with_friends: boolean
   advanced_stats: boolean
-  character_styles: boolean
   chemistry_analysis: boolean
 }
 

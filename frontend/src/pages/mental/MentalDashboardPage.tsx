@@ -29,7 +29,8 @@ export default function MentalDashboardPage() {
     queryFn: () => mentalService.checkNegativeTrend(7),
   })
 
-  if (isLoadingStatus || isLoadingRadar || isLoadingHistory) {
+  // Show page loading only when the critical status is loading
+  if (isLoadingStatus) {
     return <PageLoading />
   }
 
@@ -92,8 +93,21 @@ export default function MentalDashboardPage() {
             <MentalStatusCard analysis={currentStatus} trend={radarData?.trend} />
           )}
 
-          {/* 레이더 차트 */}
-          {radarData && (
+          {/* 레이더 차트 - Progressive Loading */}
+          {isLoadingRadar ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">심리 인바디 체크</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-80 flex items-center justify-center">
+                  <div className="animate-pulse text-gray-400">
+                    차트를 불러오는 중...
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : radarData ? (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">심리 인바디 체크</CardTitle>
@@ -108,10 +122,23 @@ export default function MentalDashboardPage() {
                 </p>
               </CardContent>
             </Card>
-          )}
+          ) : null}
 
-          {/* 히스토리 차트 */}
-          {history && history.items.length > 0 && (
+          {/* 히스토리 차트 - Progressive Loading */}
+          {isLoadingHistory ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">최근 2주 변화</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64 flex items-center justify-center">
+                  <div className="animate-pulse text-gray-400">
+                    히스토리를 불러오는 중...
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : history && history.items.length > 0 ? (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">최근 2주 변화</CardTitle>
@@ -120,7 +147,7 @@ export default function MentalDashboardPage() {
                 <MentalHistoryChart data={history.items} />
               </CardContent>
             </Card>
-          )}
+          ) : null}
 
           {/* 퀵 메뉴 */}
           <div className="grid gap-4 sm:grid-cols-2">

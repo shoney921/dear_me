@@ -6,12 +6,15 @@ from app.core.deps import get_db, get_current_active_user
 from app.core.business_logger import biz_log
 from app.models.friendship import Friendship, FriendshipStatus
 from app.models.user import User
+from app.models.persona import Persona
 from app.schemas.friendship import (
     FriendshipCreate,
     FriendshipResponse,
     FriendshipUpdate,
     FriendshipWithUser,
     FriendListResponse,
+    FriendWithPersonaResponse,
+    FriendRecommendationResponse,
 )
 from app.schemas.user import UserResponse
 from app.services.subscription_service import SubscriptionService
@@ -224,3 +227,80 @@ def remove_friend(
     biz_log.friend_delete(current_user.username, friend_name)
     db.delete(friendship)
     db.commit()
+
+
+@router.get("/with-persona", response_model=list[FriendWithPersonaResponse])
+def get_friends_with_persona(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """친구 목록 조회 (페르소나 정보 포함)"""
+    friendships = db.query(Friendship).filter(
+        or_(
+            Friendship.requester_id == current_user.id,
+            Friendship.addressee_id == current_user.id,
+        ),
+        Friendship.status == FriendshipStatus.ACCEPTED,
+    ).all()
+
+    result = []
+    for f in friendships:
+        friend = f.addressee if f.requester_id == current_user.id else f.requester
+
+        # 해당 친구의 공개 페르소나 조회
+        persona = db.query(Persona).filter(
+            Persona.user_id == friend.id,
+            Persona.is_public == True,
+        ).first()
+
+        result.append(FriendWithPersonaResponse(
+            id=friend.id,
+            username=friend.username,
+            email=friend.email,
+            profile_image=friend.profile_image,
+            persona_name=persona.name if persona else None,
+            persona_id=persona.id if persona else None,
+        ))
+
+    return result
+
+
+@router.get("/recommendations", response_model=FriendRecommendationResponse)
+def get_friend_recommendations(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """친구 추천 목록 조회 (공개 페르소나 보유자)"""
+    # 이미 친구인 사용자 ID 목록
+    friendships = db.query(Friendship).filter(
+        or_(
+            Friendship.requester_id == current_user.id,
+            Friendship.addressee_id == current_user.id,
+        ),
+        Friendship.status.in_([FriendshipStatus.ACCEPTED, FriendshipStatus.PENDING]),
+    ).all()
+
+    excluded_ids = {current_user.id}
+    for f in friendships:
+        excluded_ids.add(f.requester_id)
+        excluded_ids.add(f.addressee_id)
+
+    # 공개 페르소나를 가진 사용자 목록 조회
+    personas = db.query(Persona).filter(
+        Persona.is_public == True,
+        ~Persona.user_id.in_(excluded_ids),
+    ).all()
+
+    recommendations = []
+    for persona in personas:
+        user = persona.user
+        recommendations.append(FriendWithPersonaResponse(
+            id=user.id,
+            username=user.username,
+            email=user.email,
+            profile_image=user.profile_image,
+            persona_name=persona.name,
+            persona_id=persona.id,
+        ))
+
+    return FriendRecommendationResponse(users=recommendations)

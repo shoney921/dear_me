@@ -11,16 +11,6 @@ from app.schemas.subscription import (
     SubscriptionStatusResponse,
     PremiumPlanInfo,
 )
-from app.schemas.character import (
-    CharacterCreate,
-    CharacterResponse,
-    CharacterUpdate,
-    CharacterHistoryResponse,
-    CharacterWithHistory,
-    CharacterGenerateRequest,
-    CharacterStyleChangeRequest,
-    CharacterGenerationStatus,
-)
 
 __all__ = [
     "UserCreate",
@@ -46,12 +36,4 @@ __all__ = [
     "SubscriptionUpdate",
     "SubscriptionStatusResponse",
     "PremiumPlanInfo",
-    "CharacterCreate",
-    "CharacterResponse",
-    "CharacterUpdate",
-    "CharacterHistoryResponse",
-    "CharacterWithHistory",
-    "CharacterGenerateRequest",
-    "CharacterStyleChangeRequest",
-    "CharacterGenerationStatus",
 ]

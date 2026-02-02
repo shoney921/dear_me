@@ -1,6 +1,6 @@
 import api from '@/lib/api'
 import type { User } from '@/types/auth'
-import type { Friendship, FriendshipWithUser, FriendListResponse } from '@/types/friend'
+import type { Friendship, FriendshipWithUser, FriendListResponse, FriendWithPersona, FriendRecommendationResponse } from '@/types/friend'
 
 export const friendService = {
   async getList(): Promise<FriendListResponse> {
@@ -36,6 +36,16 @@ export const friendService = {
 
   async searchUsers(username: string): Promise<User[]> {
     const response = await api.get<User[]>(`/users/search/${username}`)
+    return response.data
+  },
+
+  async getListWithPersona(): Promise<FriendWithPersona[]> {
+    const response = await api.get<FriendWithPersona[]>('/friends/with-persona')
+    return response.data
+  },
+
+  async getRecommendations(): Promise<FriendRecommendationResponse> {
+    const response = await api.get<FriendRecommendationResponse>('/friends/recommendations')
     return response.data
   },
 }

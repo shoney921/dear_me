@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { User, MessageCircle, RefreshCw, Settings, Palette, Sparkles, TrendingUp } from 'lucide-react'
+import { User, MessageCircle, RefreshCw, Settings, Palette, Sparkles, TrendingUp, Users, UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { personaService } from '@/services/personaService'
 import { chatService } from '@/services/chatService'
 import { quizService } from '@/services/quizService'
+import { friendService } from '@/services/friendService'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Loading } from '@/components/ui/Loading'
@@ -39,6 +40,18 @@ export default function PersonaPage() {
     queryKey: ['personaLevel'],
     queryFn: quizService.getPersonaLevel,
     enabled: status?.has_persona === true,
+  })
+
+  const { data: friendsWithPersona } = useQuery({
+    queryKey: ['friendsWithPersona'],
+    queryFn: friendService.getListWithPersona,
+    enabled: status?.has_persona === true,
+  })
+
+  const { data: recommendations } = useQuery({
+    queryKey: ['friendRecommendations'],
+    queryFn: friendService.getRecommendations,
+    enabled: status?.has_persona === true && friendsWithPersona?.length === 0,
   })
 
   const generateMutation = useMutation({
@@ -86,6 +99,27 @@ export default function PersonaPage() {
     },
     onSuccess: (chat) => {
       navigate(`/persona/chat/${chat.id}`)
+    },
+    onError: (err) => {
+      toast.error(getApiErrorMessage(err))
+    },
+  })
+
+  const startFriendChatMutation = useMutation({
+    mutationFn: (personaId: number) => chatService.create(personaId),
+    onSuccess: (chat) => {
+      navigate(`/persona/chat/${chat.id}`)
+    },
+    onError: (err) => {
+      toast.error(getApiErrorMessage(err))
+    },
+  })
+
+  const sendFriendRequestMutation = useMutation({
+    mutationFn: (addresseeId: number) => friendService.sendRequest(addresseeId),
+    onSuccess: () => {
+      toast.success('친구 요청을 보냈습니다!')
+      queryClient.invalidateQueries({ queryKey: ['friendRecommendations'] })
     },
     onError: (err) => {
       toast.error(getApiErrorMessage(err))
@@ -405,6 +439,95 @@ export default function PersonaPage() {
             <MessageCircle className="mr-2 h-4 w-4" />
             {startChatMutation.isPending ? '채팅방 생성 중...' : '대화 시작하기'}
           </Button>
+        </CardContent>
+      </Card>
+
+      {/* Friend Persona Chat Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            친구의 페르소나와 대화해 보세요
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {friendsWithPersona && friendsWithPersona.length > 0 ? (
+            <div className="space-y-3">
+              {friendsWithPersona.map((friend) => (
+                <div
+                  key={friend.id}
+                  className="flex items-center justify-between rounded-lg border p-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary">
+                      <User className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{friend.username}</p>
+                      {friend.persona_name ? (
+                        <p className="text-sm text-muted-foreground">
+                          {friend.persona_name}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          페르소나 없음
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  {friend.persona_id && (
+                    <Button
+                      size="sm"
+                      onClick={() => startFriendChatMutation.mutate(friend.persona_id!)}
+                      disabled={startFriendChatMutation.isPending}
+                    >
+                      <MessageCircle className="mr-1 h-4 w-4" />
+                      대화
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : recommendations && recommendations.users.length > 0 ? (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                아직 친구가 없네요. 이런 사람들은 어때요?
+              </p>
+              <div className="space-y-3">
+                {recommendations.users.map((user) => (
+                  <div
+                    key={user.id}
+                    className="flex items-center justify-between rounded-lg border p-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary">
+                        <User className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <p className="font-medium">{user.username}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {user.persona_name}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => sendFriendRequestMutation.mutate(user.id)}
+                      disabled={sendFriendRequestMutation.isPending}
+                    >
+                      <UserPlus className="mr-1 h-4 w-4" />
+                      친구 요청
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-center text-muted-foreground py-4">
+              아직 친구가 없어요. 친구를 추가해 보세요!
+            </p>
+          )}
         </CardContent>
       </Card>
 

@@ -158,9 +158,6 @@ export default function PremiumPage() {
                 {!usageStatus.features.advanced_stats && (
                   <li>• 상세 감정 분석 리포트</li>
                 )}
-                {!usageStatus.features.character_styles && (
-                  <li>• 캐릭터 스타일 변경</li>
-                )}
                 {!usageStatus.features.chemistry_analysis && (
                   <li>• 케미 분석</li>
                 )}

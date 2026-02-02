@@ -20,3 +20,16 @@ export interface FriendListResponse {
   friends: User[]
   total: number
 }
+
+export interface FriendWithPersona {
+  id: number
+  username: string
+  email: string
+  profile_image?: string
+  persona_name?: string
+  persona_id?: number
+}
+
+export interface FriendRecommendationResponse {
+  users: FriendWithPersona[]
+}
