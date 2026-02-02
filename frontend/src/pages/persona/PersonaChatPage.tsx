@@ -9,6 +9,10 @@ import { Input } from '@/components/ui/Input'
 import { PageLoading } from '@/components/ui/Loading'
 import { cn } from '@/lib/utils'
 import { getApiErrorMessage } from '@/lib/error'
+import type { ChatWithMessages, ChatMessage } from '@/types/chat'
+
+// 임시 ID 생성 (낙관적 업데이트용)
+const generateTempId = () => -Date.now()
 
 export default function PersonaChatPage() {
   const { chatId } = useParams<{ chatId: string }>()
@@ -31,16 +35,79 @@ export default function PersonaChatPage() {
     queryKey: ['chat', chatId],
     queryFn: () => chatService.getById(Number(chatId)),
     enabled: !!chatId,
+    staleTime: Infinity, // 데이터를 항상 최신으로 간주 (자동 refetch 방지)
+    gcTime: 5 * 60 * 1000, // 5분간 캐시 유지
   })
 
   const sendMutation = useMutation({
     mutationFn: (content: string) => chatService.sendMessage(Number(chatId), content),
-    onSuccess: () => {
-      setError('')
-      queryClient.invalidateQueries({ queryKey: ['chat', chatId] })
-      setMessage('')
+
+    // 즉시 사용자 메시지 표시 (낙관적 업데이트)
+    onMutate: async (content: string) => {
+      console.log('[onMutate] 시작 - 사용자 메시지:', content)
+
+      await queryClient.cancelQueries({ queryKey: ['chat', chatId] })
+      console.log('[onMutate] 쿼리 취소 완료')
+
+      const previousChat = queryClient.getQueryData<ChatWithMessages>(['chat', chatId])
+      console.log('[onMutate] 이전 채팅 데이터:', previousChat?.messages.length, '개 메시지')
+
+      if (previousChat) {
+        const optimisticUserMessage: ChatMessage = {
+          id: generateTempId(),
+          chat_id: Number(chatId),
+          content: content,
+          is_user: true,
+          created_at: new Date().toISOString(),
+        }
+
+        const updatedChat = {
+          ...previousChat,
+          messages: [...previousChat.messages, optimisticUserMessage],
+        }
+
+        console.log('[onMutate] 낙관적 업데이트 적용 - 새 메시지 개수:', updatedChat.messages.length)
+        queryClient.setQueryData<ChatWithMessages>(['chat', chatId], updatedChat)
+
+        // 업데이트 후 확인
+        const afterUpdate = queryClient.getQueryData<ChatWithMessages>(['chat', chatId])
+        console.log('[onMutate] 업데이트 후 메시지 개수:', afterUpdate?.messages.length)
+      }
+
+      console.log('[onMutate] 완료')
+
+      return { previousChat }
     },
-    onError: (err) => {
+
+    // AI 응답 추가
+    onSuccess: (aiMessage) => {
+      console.log('[onSuccess] AI 응답 받음:', aiMessage)
+
+      const currentChat = queryClient.getQueryData<ChatWithMessages>(['chat', chatId])
+      console.log('[onSuccess] 현재 채팅 데이터:', currentChat?.messages.length, '개 메시지')
+
+      if (currentChat) {
+        const updatedChat = {
+          ...currentChat,
+          messages: [...currentChat.messages, aiMessage],
+        }
+
+        console.log('[onSuccess] AI 응답 추가 - 새 메시지 개수:', updatedChat.messages.length)
+        queryClient.setQueryData<ChatWithMessages>(['chat', chatId], updatedChat)
+      }
+
+      setError('')
+      console.log('[onSuccess] 완료')
+    },
+
+    // 실패 시 롤백
+    onError: (err, _variables, context) => {
+      console.log('[onError] 에러 발생:', err)
+
+      if (context?.previousChat) {
+        queryClient.setQueryData(['chat', chatId], context.previousChat)
+        console.log('[onError] 롤백 완료')
+      }
       setError(getApiErrorMessage(err))
     },
   })
@@ -48,7 +115,10 @@ export default function PersonaChatPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!message.trim() || sendMutation.isPending) return
-    sendMutation.mutate(message)
+
+    const messageToSend = message.trim()
+    setMessage('') // 입력창 즉시 클리어
+    sendMutation.mutate(messageToSend)
   }
 
   // Auto scroll to bottom
@@ -137,7 +207,7 @@ export default function PersonaChatPage() {
             {sendMutation.isPending && (
               <div className="flex justify-start">
                 <div className="max-w-[80%] rounded-lg bg-secondary px-4 py-2">
-                  <p className="text-muted-foreground">입력 중...</p>
+                  <p className="text-muted-foreground">페르소나가 생각하는 중...</p>
                 </div>
               </div>
             )}
