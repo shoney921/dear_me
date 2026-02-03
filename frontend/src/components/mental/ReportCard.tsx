@@ -61,12 +61,12 @@ export function ReportCard({ report, type }: ReportCardProps) {
       <CardContent className="space-y-4">
         {/* 평균 점수 그리드 */}
         <div className="grid grid-cols-3 gap-3">
-          <ScoreItem label="스트레스" score={report.avg_stress_score} inverse />
-          <ScoreItem label="불안" score={report.avg_anxiety_score} inverse />
-          <ScoreItem label="우울" score={report.avg_depression_score} inverse />
+          <ScoreItem label="정서 안정성" score={report.avg_emotional_stability_score} />
+          <ScoreItem label="활력" score={report.avg_vitality_score} />
           <ScoreItem label="자존감" score={report.avg_self_esteem_score} />
           <ScoreItem label="긍정성" score={report.avg_positivity_score} />
           <ScoreItem label="사회적 연결" score={report.avg_social_connection_score} />
+          <ScoreItem label="회복탄력성" score={report.avg_resilience_score} />
         </div>
 
         {/* 인사이트 */}
@@ -109,10 +109,10 @@ interface ScoreItemProps {
   inverse?: boolean
 }
 
-function ScoreItem({ label, score, inverse }: ScoreItemProps) {
-  // inverse가 true면 낮을수록 좋음 (스트레스, 불안, 우울)
-  const isGood = inverse ? score < 40 : score > 60
-  const isBad = inverse ? score > 60 : score < 40
+function ScoreItem({ label, score }: ScoreItemProps) {
+  // 모든 지표가 높을수록 좋음
+  const isGood = score > 60
+  const isBad = score < 40
 
   const colorClass = isGood
     ? 'text-green-600'

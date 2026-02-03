@@ -155,37 +155,61 @@ MENTAL_ANALYSIS_PROMPT = """
 제목: {title}
 내용: {content}
 
-## 분석 기준 (각 항목 0-100점, 50이 중립):
-1. 스트레스 (stress): 높을수록 스트레스가 많음
-2. 불안 (anxiety): 높을수록 불안함
-3. 우울 (depression): 높을수록 우울함
-4. 자존감 (self_esteem): 높을수록 자존감이 높음
-5. 긍정성 (positivity): 높을수록 긍정적
-6. 사회적 연결 (social_connection): 높을수록 사회적 연결감이 높음
+## 분석 항목 (각 0-100점, 모두 높을수록 좋음):
+
+### 1. 정서 안정성 (emotional_stability)
+감정의 균형과 평온함을 측정합니다.
+- 높음: 차분함, 평온함, 안정감 / 걱정·불안 없음
+- 낮음: 불안, 걱정, 스트레스, 초조, 긴장
+
+### 2. 활력 (vitality)
+일상의 에너지와 의욕 수준을 측정합니다.
+- 높음: 활기, 에너지, 의욕, 열정, 즐거움
+- 낮음: 무기력, 피곤, 우울, 권태
+
+### 3. 자존감 (self_esteem)
+자기 가치감과 자신감을 측정합니다.
+- 높음: 자신감, 성취감, 뿌듯함, 긍정적 자기평가
+- 낮음: 자기비하, 열등감, 부끄러움, 자신감 결여
+
+### 4. 긍정성 (positivity)
+낙관적 태도와 희망을 측정합니다.
+- 높음: 감사, 행복, 희망, 기대, 낙관
+- 낮음: 비관, 절망, 무의미, 포기
+
+### 5. 사회적 연결 (social_connection)
+대인관계의 질과 유대감을 측정합니다.
+- 높음: 유대감, 소속감, 이해받음, 함께함
+- 낮음: 외로움, 고립, 소외, 갈등
+
+### 6. 회복탄력성 (resilience)
+어려움 극복과 적응 능력을 측정합니다.
+- 높음: 문제해결, 극복, 적응, 배움, 성장
+- 낮음: 포기, 무력감, 회피, 좌절
 
 ## 종합 상태 판단 기준:
-- good: 대부분의 지표가 긍정적 (스트레스/불안/우울이 40 이하, 자존감/긍정성/사회적연결이 60 이상)
-- neutral: 지표가 대체로 중립 범위 (40-60)
-- concerning: 일부 지표가 부정적 (스트레스/불안/우울이 70 이상 또는 자존감/긍정성/사회적연결이 30 이하)
-- critical: 여러 지표가 심각하게 부정적
+- good: 대부분의 지표가 60점 이상
+- neutral: 대부분의 지표가 40-60점 범위
+- concerning: 2개 이상의 지표가 30점 이하
+- critical: 4개 이상의 지표가 30점 이하
 
 ## 응답 형식 (JSON만 응답):
 {{
-    "stress_score": 숫자,
-    "anxiety_score": 숫자,
-    "depression_score": 숫자,
+    "emotional_stability_score": 숫자,
+    "vitality_score": 숫자,
     "self_esteem_score": 숫자,
     "positivity_score": 숫자,
     "social_connection_score": 숫자,
+    "resilience_score": 숫자,
     "overall_status": "good/neutral/concerning/critical",
     "analysis_summary": "분석 요약 (2-3문장)"
 }}
 
 주의사항:
-- 일기 내용을 객관적으로 분석하세요
-- 극단적인 점수는 명확한 근거가 있을 때만 부여하세요
-- 한 가지 키워드에 과민 반응하지 말고 전체 맥락을 고려하세요
-- JSON 형식으로만 응답하세요
+- 일기의 전체 맥락을 고려하여 객관적으로 분석하세요
+- 단순 키워드 매칭이 아닌 문맥적 의미를 파악하세요
+- 극단적인 점수(0-20, 80-100)는 명확한 근거가 있을 때만 부여하세요
+- 일기가 짧거나 애매한 경우 중립(50점)에 가깝게 평가하세요
 """
 
 FEEDBACK_GENERATION_PROMPT = """
@@ -193,12 +217,12 @@ FEEDBACK_GENERATION_PROMPT = """
 사용자의 멘탈 분석 결과를 바탕으로 적절한 피드백을 제공해주세요.
 
 ## 멘탈 분석 결과:
-- 스트레스: {stress_score}점
-- 불안: {anxiety_score}점
-- 우울: {depression_score}점
+- 정서 안정성: {emotional_stability_score}점
+- 활력: {vitality_score}점
 - 자존감: {self_esteem_score}점
 - 긍정성: {positivity_score}점
 - 사회적 연결: {social_connection_score}점
+- 회복탄력성: {resilience_score}점
 - 종합 상태: {overall_status}
 
 ## 피드백 규칙:
@@ -229,12 +253,12 @@ BOOK_RECOMMENDATION_PROMPT = """
 
 ## 현재 멘탈 상태:
 - 종합 상태: {overall_status}
-- 스트레스: {stress_score}점
-- 불안: {anxiety_score}점
-- 우울: {depression_score}점
+- 정서 안정성: {emotional_stability_score}점
+- 활력: {vitality_score}점
 - 자존감: {self_esteem_score}점
 - 긍정성: {positivity_score}점
 - 사회적 연결: {social_connection_score}점
+- 회복탄력성: {resilience_score}점
 
 ## 추천 기준:
 1. good 상태: 성장, 영감, 도전을 주는 책
@@ -286,12 +310,12 @@ MENTAL_REPORT_INSIGHTS_PROMPT = """
 {daily_scores}
 
 ## 평균 점수:
-- 스트레스: {avg_stress}점
-- 불안: {avg_anxiety}점
-- 우울: {avg_depression}점
+- 정서 안정성: {avg_emotional_stability}점
+- 활력: {avg_vitality}점
 - 자존감: {avg_self_esteem}점
 - 긍정성: {avg_positivity}점
 - 사회적 연결: {avg_social_connection}점
+- 회복탄력성: {avg_resilience}점
 
 ## 추세: {trend}
 

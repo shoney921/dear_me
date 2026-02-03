@@ -21,13 +21,13 @@ class MentalAnalysis(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     diary_id = Column(Integer, ForeignKey("diaries.id", ondelete="CASCADE"), nullable=True)
 
-    # 점수 (0-100, 50이 중립)
-    stress_score = Column(Integer, default=50)
-    anxiety_score = Column(Integer, default=50)
-    depression_score = Column(Integer, default=50)
+    # 점수 (0-100, 50이 중립, 모두 높을수록 좋음)
+    emotional_stability_score = Column(Integer, default=50)
+    vitality_score = Column(Integer, default=50)
     self_esteem_score = Column(Integer, default=50)
     positivity_score = Column(Integer, default=50)
     social_connection_score = Column(Integer, default=50)
+    resilience_score = Column(Integer, default=50)
 
     # 종합 상태
     overall_status = Column(String(20), default=OverallStatus.NEUTRAL.value)

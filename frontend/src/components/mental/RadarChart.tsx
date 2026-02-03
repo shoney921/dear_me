@@ -16,12 +16,12 @@ interface RadarChartProps {
 }
 
 const AXIS_LABELS: Record<keyof RadarChartData, string> = {
-  stress: '스트레스',
-  anxiety: '불안',
-  depression: '우울',
+  emotional_stability: '정서 안정성',
+  vitality: '활력',
   self_esteem: '자존감',
   positivity: '긍정성',
   social_connection: '사회적 연결',
+  resilience: '회복탄력성',
 }
 
 export function RadarChart({ current, previous, showLegend = true }: RadarChartProps) {

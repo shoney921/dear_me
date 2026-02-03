@@ -12,40 +12,40 @@ import type { MentalHistoryItem } from '@/types/mental'
 
 interface MentalHistoryChartProps {
   data: MentalHistoryItem[]
-  showMetrics?: ('stress' | 'positivity' | 'self_esteem')[]
+  showMetrics?: ('emotional_stability' | 'vitality' | 'positivity' | 'self_esteem' | 'social_connection' | 'resilience')[]
 }
 
 const METRIC_COLORS = {
-  stress: '#ef4444',
-  positivity: '#22c55e',
-  self_esteem: '#6366f1',
-  anxiety: '#f59e0b',
-  depression: '#8b5cf6',
+  emotional_stability: '#6366f1',
+  vitality: '#22c55e',
+  self_esteem: '#8b5cf6',
+  positivity: '#f59e0b',
   social_connection: '#06b6d4',
+  resilience: '#ef4444',
 }
 
 const METRIC_LABELS = {
-  stress: '스트레스',
-  positivity: '긍정성',
+  emotional_stability: '정서 안정성',
+  vitality: '활력',
   self_esteem: '자존감',
-  anxiety: '불안',
-  depression: '우울',
+  positivity: '긍정성',
   social_connection: '사회적 연결',
+  resilience: '회복탄력성',
 }
 
 export function MentalHistoryChart({
   data,
-  showMetrics = ['stress', 'positivity', 'self_esteem'],
+  showMetrics = ['emotional_stability', 'vitality', 'positivity'],
 }: MentalHistoryChartProps) {
   const chartData = data
     .map((item) => ({
       date: new Date(item.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }),
-      stress: item.stress_score,
-      positivity: item.positivity_score,
+      emotional_stability: item.emotional_stability_score,
+      vitality: item.vitality_score,
       self_esteem: item.self_esteem_score,
-      anxiety: item.anxiety_score,
-      depression: item.depression_score,
+      positivity: item.positivity_score,
       social_connection: item.social_connection_score,
+      resilience: item.resilience_score,
     }))
     .reverse()
 

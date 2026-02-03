@@ -27,13 +27,13 @@ class MentalReport(Base):
     period_start = Column(Date, nullable=False)
     period_end = Column(Date, nullable=False)
 
-    # 평균 점수
-    avg_stress_score = Column(Integer, default=50)
-    avg_anxiety_score = Column(Integer, default=50)
-    avg_depression_score = Column(Integer, default=50)
+    # 평균 점수 (모두 높을수록 좋음)
+    avg_emotional_stability_score = Column(Integer, default=50)
+    avg_vitality_score = Column(Integer, default=50)
     avg_self_esteem_score = Column(Integer, default=50)
     avg_positivity_score = Column(Integer, default=50)
     avg_social_connection_score = Column(Integer, default=50)
+    avg_resilience_score = Column(Integer, default=50)
 
     # 추세 및 인사이트
     trend = Column(String(20), default=TrendType.STABLE.value)  # improving, stable, declining

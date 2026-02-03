@@ -3,24 +3,24 @@ export type TrendType = 'improving' | 'stable' | 'declining'
 export type ReportType = 'weekly' | 'monthly'
 
 export interface RadarChartData {
-  stress: number
-  anxiety: number
-  depression: number
+  emotional_stability: number
+  vitality: number
   self_esteem: number
   positivity: number
   social_connection: number
+  resilience: number
 }
 
 export interface MentalAnalysis {
   id: number
   user_id: number
   diary_id?: number
-  stress_score: number
-  anxiety_score: number
-  depression_score: number
+  emotional_stability_score: number
+  vitality_score: number
   self_esteem_score: number
   positivity_score: number
   social_connection_score: number
+  resilience_score: number
   overall_status: OverallStatus
   analysis_date: string
   created_at: string
@@ -47,12 +47,12 @@ export interface RadarChartResponse {
 export interface MentalHistoryItem {
   date: string
   overall_status: OverallStatus
-  stress_score: number
-  anxiety_score: number
-  depression_score: number
+  emotional_stability_score: number
+  vitality_score: number
   self_esteem_score: number
   positivity_score: number
   social_connection_score: number
+  resilience_score: number
 }
 
 export interface MentalHistoryResponse {
@@ -79,12 +79,12 @@ export interface MentalReport {
   report_type: ReportType
   period_start: string
   period_end: string
-  avg_stress_score: number
-  avg_anxiety_score: number
-  avg_depression_score: number
+  avg_emotional_stability_score: number
+  avg_vitality_score: number
   avg_self_esteem_score: number
   avg_positivity_score: number
   avg_social_connection_score: number
+  avg_resilience_score: number
   trend: TrendType
   insights?: string[]
   recommendations?: string[]

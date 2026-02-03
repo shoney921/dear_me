@@ -32,12 +32,12 @@ class MentalService:
         analysis = MentalAnalysis(
             user_id=user.id,
             diary_id=diary.id,
-            stress_score=analysis_data.get("stress_score", 50),
-            anxiety_score=analysis_data.get("anxiety_score", 50),
-            depression_score=analysis_data.get("depression_score", 50),
+            emotional_stability_score=analysis_data.get("emotional_stability_score", 50),
+            vitality_score=analysis_data.get("vitality_score", 50),
             self_esteem_score=analysis_data.get("self_esteem_score", 50),
             positivity_score=analysis_data.get("positivity_score", 50),
             social_connection_score=analysis_data.get("social_connection_score", 50),
+            resilience_score=analysis_data.get("resilience_score", 50),
             overall_status=analysis_data.get("overall_status", OverallStatus.NEUTRAL.value),
             ai_analysis_raw=json.dumps(analysis_data, ensure_ascii=False),
             analysis_date=diary.diary_date,
@@ -90,12 +90,12 @@ class MentalService:
     def _get_default_analysis(self) -> dict:
         """기본 분석 결과 (AI 실패 시)"""
         return {
-            "stress_score": 50,
-            "anxiety_score": 50,
-            "depression_score": 50,
+            "emotional_stability_score": 50,
+            "vitality_score": 50,
             "self_esteem_score": 50,
             "positivity_score": 50,
             "social_connection_score": 50,
+            "resilience_score": 50,
             "overall_status": OverallStatus.NEUTRAL.value,
             "analysis_summary": "일기 분석이 완료되었습니다.",
         }
@@ -116,12 +116,12 @@ class MentalService:
         if not analyses:
             return {
                 "current": {
-                    "stress": 50,
-                    "anxiety": 50,
-                    "depression": 50,
+                    "emotional_stability": 50,
+                    "vitality": 50,
                     "self_esteem": 50,
                     "positivity": 50,
                     "social_connection": 50,
+                    "resilience": 50,
                 },
                 "previous": None,
                 "trend": TrendType.STABLE.value,
@@ -131,23 +131,23 @@ class MentalService:
         previous = analyses[1] if len(analyses) > 1 else None
 
         current_data = {
-            "stress": current.stress_score,
-            "anxiety": current.anxiety_score,
-            "depression": current.depression_score,
+            "emotional_stability": current.emotional_stability_score,
+            "vitality": current.vitality_score,
             "self_esteem": current.self_esteem_score,
             "positivity": current.positivity_score,
             "social_connection": current.social_connection_score,
+            "resilience": current.resilience_score,
         }
 
         previous_data = None
         if previous:
             previous_data = {
-                "stress": previous.stress_score,
-                "anxiety": previous.anxiety_score,
-                "depression": previous.depression_score,
+                "emotional_stability": previous.emotional_stability_score,
+                "vitality": previous.vitality_score,
                 "self_esteem": previous.self_esteem_score,
                 "positivity": previous.positivity_score,
                 "social_connection": previous.social_connection_score,
+                "resilience": previous.resilience_score,
             }
 
         trend = self._calculate_trend(current_data, previous_data)
@@ -159,22 +159,17 @@ class MentalService:
         }
 
     def _calculate_trend(self, current: dict, previous: Optional[dict]) -> str:
-        """추세 계산"""
+        """추세 계산 (모든 지표가 높을수록 좋음)"""
         if not previous:
             return TrendType.STABLE.value
 
-        # 긍정적 지표들 (높을수록 좋음)
-        positive_metrics = ["self_esteem", "positivity", "social_connection"]
-        # 부정적 지표들 (낮을수록 좋음)
-        negative_metrics = ["stress", "anxiety", "depression"]
+        # 모든 지표가 긍정적 (높을수록 좋음)
+        all_metrics = ["emotional_stability", "vitality", "self_esteem", "positivity", "social_connection", "resilience"]
 
         score_diff = 0
 
-        for metric in positive_metrics:
+        for metric in all_metrics:
             score_diff += current[metric] - previous[metric]
-
-        for metric in negative_metrics:
-            score_diff -= current[metric] - previous[metric]
 
         if score_diff > 15:
             return TrendType.IMPROVING.value
@@ -200,12 +195,12 @@ class MentalService:
                 {
                     "date": item.analysis_date,
                     "overall_status": item.overall_status,
-                    "stress_score": item.stress_score,
-                    "anxiety_score": item.anxiety_score,
-                    "depression_score": item.depression_score,
+                    "emotional_stability_score": item.emotional_stability_score,
+                    "vitality_score": item.vitality_score,
                     "self_esteem_score": item.self_esteem_score,
                     "positivity_score": item.positivity_score,
                     "social_connection_score": item.social_connection_score,
+                    "resilience_score": item.resilience_score,
                 }
                 for item in items
             ],
@@ -228,12 +223,12 @@ class MentalService:
             client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
             prompt = FEEDBACK_GENERATION_PROMPT.format(
-                stress_score=analysis.stress_score,
-                anxiety_score=analysis.anxiety_score,
-                depression_score=analysis.depression_score,
+                emotional_stability_score=analysis.emotional_stability_score,
+                vitality_score=analysis.vitality_score,
                 self_esteem_score=analysis.self_esteem_score,
                 positivity_score=analysis.positivity_score,
                 social_connection_score=analysis.social_connection_score,
+                resilience_score=analysis.resilience_score,
                 overall_status=analysis.overall_status,
             )
 
@@ -319,12 +314,12 @@ class MentalService:
 
             prompt = BOOK_RECOMMENDATION_PROMPT.format(
                 overall_status=analysis.overall_status,
-                stress_score=analysis.stress_score,
-                anxiety_score=analysis.anxiety_score,
-                depression_score=analysis.depression_score,
+                emotional_stability_score=analysis.emotional_stability_score,
+                vitality_score=analysis.vitality_score,
                 self_esteem_score=analysis.self_esteem_score,
                 positivity_score=analysis.positivity_score,
                 social_connection_score=analysis.social_connection_score,
+                resilience_score=analysis.resilience_score,
             )
 
             response = await client.chat.completions.create(
@@ -416,12 +411,12 @@ class MentalService:
             return None
 
         # 평균 계산
-        avg_stress = sum(a.stress_score for a in analyses) // len(analyses)
-        avg_anxiety = sum(a.anxiety_score for a in analyses) // len(analyses)
-        avg_depression = sum(a.depression_score for a in analyses) // len(analyses)
+        avg_emotional_stability = sum(a.emotional_stability_score for a in analyses) // len(analyses)
+        avg_vitality = sum(a.vitality_score for a in analyses) // len(analyses)
         avg_self_esteem = sum(a.self_esteem_score for a in analyses) // len(analyses)
         avg_positivity = sum(a.positivity_score for a in analyses) // len(analyses)
         avg_social = sum(a.social_connection_score for a in analyses) // len(analyses)
+        avg_resilience = sum(a.resilience_score for a in analyses) // len(analyses)
 
         # 추세 계산 (이전 주와 비교)
         prev_week_start = week_start - timedelta(days=7)
@@ -434,24 +429,24 @@ class MentalService:
 
         trend = TrendType.STABLE.value
         if prev_analyses:
-            prev_avg_stress = sum(a.stress_score for a in prev_analyses) // len(prev_analyses)
+            prev_avg_emotional_stability = sum(a.emotional_stability_score for a in prev_analyses) // len(prev_analyses)
             prev_avg_positivity = sum(a.positivity_score for a in prev_analyses) // len(prev_analyses)
 
-            if avg_stress < prev_avg_stress - 10 or avg_positivity > prev_avg_positivity + 10:
+            if avg_emotional_stability > prev_avg_emotional_stability + 10 or avg_positivity > prev_avg_positivity + 10:
                 trend = TrendType.IMPROVING.value
-            elif avg_stress > prev_avg_stress + 10 or avg_positivity < prev_avg_positivity - 10:
+            elif avg_emotional_stability < prev_avg_emotional_stability - 10 or avg_positivity < prev_avg_positivity - 10:
                 trend = TrendType.DECLINING.value
 
         # AI 인사이트 생성
         daily_scores = [
             {
                 "date": str(a.analysis_date),
-                "stress": a.stress_score,
-                "anxiety": a.anxiety_score,
-                "depression": a.depression_score,
+                "emotional_stability": a.emotional_stability_score,
+                "vitality": a.vitality_score,
                 "self_esteem": a.self_esteem_score,
                 "positivity": a.positivity_score,
                 "social_connection": a.social_connection_score,
+                "resilience": a.resilience_score,
             }
             for a in analyses
         ]
@@ -461,12 +456,12 @@ class MentalService:
             period_start=week_start,
             period_end=week_end,
             daily_scores=daily_scores,
-            avg_stress=avg_stress,
-            avg_anxiety=avg_anxiety,
-            avg_depression=avg_depression,
+            avg_emotional_stability=avg_emotional_stability,
+            avg_vitality=avg_vitality,
             avg_self_esteem=avg_self_esteem,
             avg_positivity=avg_positivity,
             avg_social_connection=avg_social,
+            avg_resilience=avg_resilience,
             trend=trend,
         )
 
@@ -475,12 +470,12 @@ class MentalService:
             report_type=ReportType.WEEKLY.value,
             period_start=week_start,
             period_end=week_end,
-            avg_stress_score=avg_stress,
-            avg_anxiety_score=avg_anxiety,
-            avg_depression_score=avg_depression,
+            avg_emotional_stability_score=avg_emotional_stability,
+            avg_vitality_score=avg_vitality,
             avg_self_esteem_score=avg_self_esteem,
             avg_positivity_score=avg_positivity,
             avg_social_connection_score=avg_social,
+            avg_resilience_score=avg_resilience,
             trend=trend,
             insights=json.dumps(insights_data.get("insights", []), ensure_ascii=False),
             recommendations=json.dumps(insights_data.get("recommendations", []), ensure_ascii=False),
@@ -522,12 +517,12 @@ class MentalService:
             return None
 
         # 평균 계산
-        avg_stress = sum(a.stress_score for a in analyses) // len(analyses)
-        avg_anxiety = sum(a.anxiety_score for a in analyses) // len(analyses)
-        avg_depression = sum(a.depression_score for a in analyses) // len(analyses)
+        avg_emotional_stability = sum(a.emotional_stability_score for a in analyses) // len(analyses)
+        avg_vitality = sum(a.vitality_score for a in analyses) // len(analyses)
         avg_self_esteem = sum(a.self_esteem_score for a in analyses) // len(analyses)
         avg_positivity = sum(a.positivity_score for a in analyses) // len(analyses)
         avg_social = sum(a.social_connection_score for a in analyses) // len(analyses)
+        avg_resilience = sum(a.resilience_score for a in analyses) // len(analyses)
 
         # 추세 계산 (이전 달과 비교)
         if month_start.month == 1:
@@ -544,24 +539,24 @@ class MentalService:
 
         trend = TrendType.STABLE.value
         if prev_analyses:
-            prev_avg_stress = sum(a.stress_score for a in prev_analyses) // len(prev_analyses)
+            prev_avg_emotional_stability = sum(a.emotional_stability_score for a in prev_analyses) // len(prev_analyses)
             prev_avg_positivity = sum(a.positivity_score for a in prev_analyses) // len(prev_analyses)
 
-            if avg_stress < prev_avg_stress - 10 or avg_positivity > prev_avg_positivity + 10:
+            if avg_emotional_stability > prev_avg_emotional_stability + 10 or avg_positivity > prev_avg_positivity + 10:
                 trend = TrendType.IMPROVING.value
-            elif avg_stress > prev_avg_stress + 10 or avg_positivity < prev_avg_positivity - 10:
+            elif avg_emotional_stability < prev_avg_emotional_stability - 10 or avg_positivity < prev_avg_positivity - 10:
                 trend = TrendType.DECLINING.value
 
         # AI 인사이트 생성
         daily_scores = [
             {
                 "date": str(a.analysis_date),
-                "stress": a.stress_score,
-                "anxiety": a.anxiety_score,
-                "depression": a.depression_score,
+                "emotional_stability": a.emotional_stability_score,
+                "vitality": a.vitality_score,
                 "self_esteem": a.self_esteem_score,
                 "positivity": a.positivity_score,
                 "social_connection": a.social_connection_score,
+                "resilience": a.resilience_score,
             }
             for a in analyses
         ]
@@ -571,12 +566,12 @@ class MentalService:
             period_start=month_start,
             period_end=month_end,
             daily_scores=daily_scores,
-            avg_stress=avg_stress,
-            avg_anxiety=avg_anxiety,
-            avg_depression=avg_depression,
+            avg_emotional_stability=avg_emotional_stability,
+            avg_vitality=avg_vitality,
             avg_self_esteem=avg_self_esteem,
             avg_positivity=avg_positivity,
             avg_social_connection=avg_social,
+            avg_resilience=avg_resilience,
             trend=trend,
         )
 
@@ -585,12 +580,12 @@ class MentalService:
             report_type=ReportType.MONTHLY.value,
             period_start=month_start,
             period_end=month_end,
-            avg_stress_score=avg_stress,
-            avg_anxiety_score=avg_anxiety,
-            avg_depression_score=avg_depression,
+            avg_emotional_stability_score=avg_emotional_stability,
+            avg_vitality_score=avg_vitality,
             avg_self_esteem_score=avg_self_esteem,
             avg_positivity_score=avg_positivity,
             avg_social_connection_score=avg_social,
+            avg_resilience_score=avg_resilience,
             trend=trend,
             insights=json.dumps(insights_data.get("insights", []), ensure_ascii=False),
             recommendations=json.dumps(insights_data.get("recommendations", []), ensure_ascii=False),
@@ -608,12 +603,12 @@ class MentalService:
         period_start: date,
         period_end: date,
         daily_scores: list,
-        avg_stress: int,
-        avg_anxiety: int,
-        avg_depression: int,
+        avg_emotional_stability: int,
+        avg_vitality: int,
         avg_self_esteem: int,
         avg_positivity: int,
         avg_social_connection: int,
+        avg_resilience: int,
         trend: str,
     ) -> dict:
         """AI를 사용하여 리포트 인사이트 생성"""
@@ -630,12 +625,12 @@ class MentalService:
                 period_start=str(period_start),
                 period_end=str(period_end),
                 daily_scores=json.dumps(daily_scores, ensure_ascii=False),
-                avg_stress=avg_stress,
-                avg_anxiety=avg_anxiety,
-                avg_depression=avg_depression,
+                avg_emotional_stability=avg_emotional_stability,
+                avg_vitality=avg_vitality,
                 avg_self_esteem=avg_self_esteem,
                 avg_positivity=avg_positivity,
                 avg_social_connection=avg_social_connection,
+                avg_resilience=avg_resilience,
                 trend=trend,
             )
 

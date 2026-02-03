@@ -5,21 +5,21 @@ from pydantic import BaseModel, Field
 
 
 class RadarChartData(BaseModel):
-    stress: int = Field(..., ge=0, le=100, description="스트레스 점수 (0-100, 낮을수록 좋음)")
-    anxiety: int = Field(..., ge=0, le=100, description="불안 점수 (0-100, 낮을수록 좋음)")
-    depression: int = Field(..., ge=0, le=100, description="우울 점수 (0-100, 낮을수록 좋음)")
-    self_esteem: int = Field(..., ge=0, le=100, description="자존감 점수 (0-100, 높을수록 좋음)")
-    positivity: int = Field(..., ge=0, le=100, description="긍정성 점수 (0-100, 높을수록 좋음)")
-    social_connection: int = Field(..., ge=0, le=100, description="사회적 연결 점수 (0-100, 높을수록 좋음)")
+    emotional_stability: int = Field(..., ge=0, le=100, description="정서 안정성 (0-100, 높을수록 좋음)")
+    vitality: int = Field(..., ge=0, le=100, description="활력 (0-100, 높을수록 좋음)")
+    self_esteem: int = Field(..., ge=0, le=100, description="자존감 (0-100, 높을수록 좋음)")
+    positivity: int = Field(..., ge=0, le=100, description="긍정성 (0-100, 높을수록 좋음)")
+    social_connection: int = Field(..., ge=0, le=100, description="사회적 연결 (0-100, 높을수록 좋음)")
+    resilience: int = Field(..., ge=0, le=100, description="회복탄력성 (0-100, 높을수록 좋음)")
 
 
 class MentalAnalysisBase(BaseModel):
-    stress_score: int = Field(50, ge=0, le=100)
-    anxiety_score: int = Field(50, ge=0, le=100)
-    depression_score: int = Field(50, ge=0, le=100)
+    emotional_stability_score: int = Field(50, ge=0, le=100)
+    vitality_score: int = Field(50, ge=0, le=100)
     self_esteem_score: int = Field(50, ge=0, le=100)
     positivity_score: int = Field(50, ge=0, le=100)
     social_connection_score: int = Field(50, ge=0, le=100)
+    resilience_score: int = Field(50, ge=0, le=100)
     overall_status: str
 
 
@@ -62,12 +62,12 @@ class BookRecommendationResponse(BaseModel):
 class MentalHistoryItem(BaseModel):
     date: date
     overall_status: str
-    stress_score: int
-    anxiety_score: int
-    depression_score: int
+    emotional_stability_score: int
+    vitality_score: int
     self_esteem_score: int
     positivity_score: int
     social_connection_score: int
+    resilience_score: int
 
     class Config:
         from_attributes = True
@@ -82,12 +82,12 @@ class MentalReportBase(BaseModel):
     report_type: str
     period_start: date
     period_end: date
-    avg_stress_score: int
-    avg_anxiety_score: int
-    avg_depression_score: int
+    avg_emotional_stability_score: int
+    avg_vitality_score: int
     avg_self_esteem_score: int
     avg_positivity_score: int
     avg_social_connection_score: int
+    avg_resilience_score: int
     trend: str
 
 
