@@ -44,6 +44,7 @@ export function PersonaCustomizeModal({
     customization?.personality_traits_override ?? []
   )
   const [greeting, setGreeting] = useState(customization?.custom_greeting ?? '')
+  const [isPublic, setIsPublic] = useState(persona.is_public)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -52,9 +53,10 @@ export function PersonaCustomizeModal({
       setUseEmoji(customization?.speaking_style_emoji ?? false)
       setSelectedTraits(customization?.personality_traits_override ?? [])
       setGreeting(customization?.custom_greeting ?? '')
+      setIsPublic(persona.is_public)
       setError('')
     }
-  }, [isOpen, customization])
+  }, [isOpen, customization, persona.is_public])
 
   const customizeMutation = useMutation({
     mutationFn: (data: PersonaCustomizeRequest) => personaService.customize(data),
@@ -75,33 +77,47 @@ export function PersonaCustomizeModal({
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const updates: PersonaCustomizeRequest = {}
+    try {
+      // 공개설정이 변경된 경우 update API 호출
+      if (isPublic !== persona.is_public) {
+        await personaService.update({ is_public: isPublic })
+      }
 
-    if (tone !== customization?.speaking_style_tone) {
-      updates.speaking_style_tone = tone
-    }
-    if (useEmoji !== customization?.speaking_style_emoji) {
-      updates.speaking_style_emoji = useEmoji
-    }
-    if (
-      JSON.stringify(selectedTraits) !==
-      JSON.stringify(customization?.personality_traits_override ?? [])
-    ) {
-      updates.personality_traits_override = selectedTraits.length > 0 ? selectedTraits : undefined
-    }
-    if (greeting !== (customization?.custom_greeting ?? '')) {
-      updates.custom_greeting = greeting || undefined
-    }
+      const updates: PersonaCustomizeRequest = {}
 
-    if (Object.keys(updates).length === 0) {
-      onClose()
-      return
-    }
+      if (tone !== customization?.speaking_style_tone) {
+        updates.speaking_style_tone = tone
+      }
+      if (useEmoji !== customization?.speaking_style_emoji) {
+        updates.speaking_style_emoji = useEmoji
+      }
+      if (
+        JSON.stringify(selectedTraits) !==
+        JSON.stringify(customization?.personality_traits_override ?? [])
+      ) {
+        updates.personality_traits_override = selectedTraits.length > 0 ? selectedTraits : undefined
+      }
+      if (greeting !== (customization?.custom_greeting ?? '')) {
+        updates.custom_greeting = greeting || undefined
+      }
 
-    customizeMutation.mutate(updates)
+      if (Object.keys(updates).length === 0 && isPublic === persona.is_public) {
+        onClose()
+        return
+      }
+
+      if (Object.keys(updates).length > 0) {
+        customizeMutation.mutate(updates)
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['myPersona'] })
+        onClose()
+      }
+    } catch (err) {
+      setError(getApiErrorMessage(err))
+    }
   }
 
   return (
@@ -151,6 +167,17 @@ export function PersonaCustomizeModal({
             </p>
           </div>
           <Switch checked={useEmoji} onCheckedChange={setUseEmoji} />
+        </div>
+
+        {/* 친구에게 공개 */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <label className="text-sm font-medium">친구에게 공개</label>
+            <p className="text-xs text-muted-foreground">
+              비공개 시 친구가 내 페르소나와 대화할 수 없습니다
+            </p>
+          </div>
+          <Switch checked={isPublic} onCheckedChange={setIsPublic} />
         </div>
 
         {/* 성격 특성 선택 */}

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { User, MessageCircle, RefreshCw, Settings, Palette, Sparkles, TrendingUp, Users, UserPlus } from 'lucide-react'
+import { User, MessageCircle, RefreshCw, Palette, Sparkles, TrendingUp, Users, UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { personaService } from '@/services/personaService'
@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Loading } from '@/components/ui/Loading'
 import { PersonaCardSkeleton } from '@/components/ui/Skeleton'
-import { PersonaSettingsModal } from '@/components/persona/PersonaSettingsModal'
 import { PersonaCustomizeModal } from '@/components/persona/PersonaCustomizeModal'
 import { MIN_DIARIES_FOR_PERSONA } from '@/lib/constants'
 import { getApiErrorMessage } from '@/lib/error'
@@ -21,7 +20,6 @@ import { cn } from '@/lib/utils'
 export default function PersonaPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false)
 
   const { data: status, isLoading: isLoadingStatus } = useQuery({
@@ -324,14 +322,6 @@ export default function PersonaPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setIsSettingsOpen(true)}
-                title="설정"
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
                 onClick={() => setIsCustomizeOpen(true)}
                 title="커스터마이징"
               >
@@ -437,7 +427,7 @@ export default function PersonaPage() {
             disabled={startChatMutation.isPending}
           >
             <MessageCircle className="mr-2 h-4 w-4" />
-            {startChatMutation.isPending ? '채팅방 생성 중...' : '대화 시작하기'}
+            {startChatMutation.isPending ? '채팅방 생성 중...' : '나의 페르소나와 대화하기'}
           </Button>
         </CardContent>
       </Card>
@@ -533,18 +523,11 @@ export default function PersonaPage() {
 
       {/* Modals */}
       {persona && (
-        <>
-          <PersonaSettingsModal
-            isOpen={isSettingsOpen}
-            onClose={() => setIsSettingsOpen(false)}
-            persona={persona}
-          />
-          <PersonaCustomizeModal
-            isOpen={isCustomizeOpen}
-            onClose={() => setIsCustomizeOpen(false)}
-            persona={persona}
-          />
-        </>
+        <PersonaCustomizeModal
+          isOpen={isCustomizeOpen}
+          onClose={() => setIsCustomizeOpen(false)}
+          persona={persona}
+        />
       )}
     </div>
   )
