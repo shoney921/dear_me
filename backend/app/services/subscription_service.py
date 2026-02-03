@@ -117,10 +117,8 @@ class SubscriptionService:
 
     def can_chat_with_friend_persona(self, user: User) -> tuple[bool, Optional[str]]:
         """친구 페르소나와 대화 가능 여부 확인"""
-        if self.is_premium(user):
-            return True, None
-
-        return False, "친구 페르소나와의 대화는 프리미엄 기능이에요. 업그레이드하면 친구 페르소나와 대화할 수 있어요!"
+        # 무료 사용자도 친구 페르소나 대화 허용
+        return True, None
 
     def get_remaining_chat_messages(self, user: User) -> Optional[int]:
         """남은 채팅 횟수 조회 (프리미엄은 None 반환)"""
