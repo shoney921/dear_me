@@ -352,10 +352,107 @@ async def test_no_sensitive_info_leak():
 
 ---
 
-## 7. 프롬프트 관리 Best Practices
+## 7. RAG (Retrieval-Augmented Generation) 프롬프트
+
+### 목적
+페르소나 대화 시 사용자 메시지와 관련된 과거 일기를 벡터 검색으로 찾아 컨텍스트로 활용합니다.
+
+### 위치
+`backend/app/constants/prompts.py`
+
+### RAG 컨텍스트 프롬프트
+
+```python
+RAG_PERSONA_CHAT_PROMPT = """
+당신은 '{persona_name}'이라는 AI 페르소나입니다.
+
+## 당신의 성격:
+{personality}
+
+## 당신의 특성:
+{traits}
+
+## 당신의 말투:
+{speaking_style}
+
+## 관련 기억 (과거 일기에서 추출, 프라이버시 보호를 위해 요약만 제공):
+{rag_context}
+
+## 대화 규칙:
+1. 위의 성격과 말투를 일관되게 유지하세요
+2. 친근하고 자연스러운 대화체를 사용하세요
+3. 너무 길지 않게, 2-4문장 정도로 답변하세요
+4. 관련 기억을 참고하되, 일기 내용을 직접적으로 언급하지 마세요
+5. 상대방의 감정에 공감하며 대화하세요
+
+## 이전 대화:
+{chat_history}
+
+## 사용자 메시지:
+{user_message}
+
+## 응답:
+"""
+```
+
+### RAG 컨텍스트 생성 (프라이버시 보호)
+
+```python
+def format_rag_context(similar_diaries: List[Tuple[Diary, float]]) -> str:
+    """유사 일기를 RAG 컨텍스트로 변환 (프라이버시 보호)"""
+    if not similar_diaries:
+        return "관련 기억이 없습니다."
+
+    context_parts = []
+    for diary, score in similar_diaries:
+        mood_str = f", 기분: {diary.mood}" if diary.mood else ""
+        # 프라이버시 보호: 제목, 날짜, 기분만 포함 (본문 제외)
+        context_parts.append(f"- [{diary.diary_date}] {diary.title}{mood_str}")
+
+    return "\n".join(context_parts)
+```
+
+### 임베딩 서비스
+
+```python
+# backend/app/services/embedding_service.py
+
+class EmbeddingService:
+    # 한국어 특화 임베딩 모델 (768차원, 무료)
+    RAG_EMBEDDING_MODEL = "jhgan/ko-sroberta-multitask"
+
+    @classmethod
+    def search_similar_diaries(
+        cls,
+        db: Session,
+        query: str,
+        user_id: int,
+        top_k: int = 3,
+        similarity_threshold: float = 0.3,
+    ) -> List[Tuple[Diary, float]]:
+        """유사한 일기 검색 (pgvector 코사인 유사도)"""
+        # ...
+```
+
+### 동작 흐름
+
+```
+사용자 메시지 입력
+    ↓
+[벡터 검색] 유사 일기 3개 검색 (cosine similarity)
+    ↓
+프롬프트 = 페르소나 정보 + 유사 일기 컨텍스트 + 대화 이력
+    ↓
+GPT-4o-mini 응답 생성
+```
+
+---
+
+## 8. 프롬프트 관리 Best Practices
 
 1. **버전 관리**: 프롬프트 변경 시 버전을 기록하세요
 2. **A/B 테스트**: 새 프롬프트는 일부 사용자에게 먼저 테스트
 3. **로깅**: 프롬프트 사용 로그를 저장하여 품질 분석
 4. **피드백 수집**: 사용자 피드백을 바탕으로 프롬프트 개선
 5. **토큰 최적화**: 불필요한 텍스트 제거로 비용 절감
+6. **RAG 튜닝**: 유사도 임계값과 top_k 값을 조정하여 최적의 컨텍스트 제공

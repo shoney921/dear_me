@@ -14,6 +14,7 @@ class User(Base):
     username = Column(String(50), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
     profile_image = Column(String(500), nullable=True)
+    rag_context_level = Column(String(20), nullable=True)  # None이면 시스템 기본값 사용
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

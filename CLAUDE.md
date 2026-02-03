@@ -20,10 +20,11 @@
 
 ### Backend
 - **FastAPI** (0.104.1) - Python 비동기 웹 프레임워크
-- **PostgreSQL 15** - 관계형 데이터베이스
+- **PostgreSQL 15 + pgvector** - 관계형 데이터베이스 (벡터 검색 지원)
 - **SQLAlchemy 2.0** - ORM
 - **Alembic** - DB 마이그레이션
 - **LangChain 0.3 + OpenAI** - AI/LLM 통합
+- **sentence-transformers** - 한국어 임베딩 모델 (RAG)
 - **Pydantic 2.x** - 데이터 검증
 - **python-jose + bcrypt** - JWT 인증
 
@@ -54,7 +55,7 @@
 │       ├── core/                    # 설정, DB, 보안, 의존성
 │       ├── models/                  # SQLAlchemy 모델
 │       ├── schemas/                 # Pydantic 스키마
-│       ├── services/                # 비즈니스 로직 (persona_service, chat_service)
+│       ├── services/                # 비즈니스 로직 (persona_service, chat_service, embedding_service)
 │       └── constants/               # 상수 (moods, weather, prompts)
 ├── frontend/
 │   └── src/
@@ -210,6 +211,9 @@ docker-compose up --build
 
 ### DB 마이그레이션
 ```bash
+# pgvector 확장 활성화 (RAG 벡터 검색용, 최초 1회)
+docker-compose exec postgres psql -U dearme -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
 # 마이그레이션 생성
 docker-compose exec backend alembic revision --autogenerate -m "description"
 
@@ -218,6 +222,18 @@ docker-compose exec backend alembic upgrade head
 
 # 마이그레이션 롤백
 docker-compose exec backend alembic downgrade -1
+```
+
+### RAG 임베딩 관리
+```bash
+# 기존 일기 임베딩 생성 (마이그레이션 후 최초 1회)
+docker-compose exec backend python -m scripts.embed_diaries
+
+# 모든 일기 임베딩 강제 재생성
+docker-compose exec backend python -m scripts.embed_diaries --force
+
+# 특정 사용자의 일기만 임베딩
+docker-compose exec backend python -m scripts.embed_diaries --user-id 1
 ```
 
 ### 테스트 실행
@@ -390,3 +406,4 @@ raise HTTPException(status_code=400, detail="Error message")
 5. **타입 안정성**: TypeScript strict 모드 사용, any 타입 지양
 6. **에러 처리**: 모든 API 호출에 에러 처리 필수, 사용자에게 한국어로 메시지 표시
 7. **Zustand Hydration**: persist 미들웨어 사용 시 `isHydrated` 상태 확인 후 라우팅
+8. **RAG 프라이버시**: RAG 컨텍스트에는 일기 본문 미포함, 제목/날짜/기분만 활용

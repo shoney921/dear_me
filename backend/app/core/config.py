@@ -25,6 +25,13 @@ class Settings(BaseSettings):
     # OpenAI
     OPENAI_API_KEY: str = ""
 
+    # RAG Settings
+    RAG_EMBEDDING_MODEL: str = "jhgan/ko-sroberta-multitask"
+    RAG_EMBEDDING_DIMENSION: int = 768
+    RAG_TOP_K: int = 3
+    RAG_SIMILARITY_THRESHOLD: float = 0.3
+    RAG_CONTEXT_LEVEL: str = "detailed"  # minimal, standard, detailed
+
     # Debug
     DEBUG: bool = True
 

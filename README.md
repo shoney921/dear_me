@@ -29,10 +29,11 @@
 
 ### Backend
 - **FastAPI 0.104.1** - Python 비동기 웹 프레임워크
-- **PostgreSQL 15** - 관계형 데이터베이스
+- **PostgreSQL 15 + pgvector** - 관계형 데이터베이스 (벡터 검색 지원)
 - **SQLAlchemy 2.0** - ORM
 - **Alembic** - DB 마이그레이션
 - **LangChain 0.3 + OpenAI** - AI/LLM 통합 (GPT-4, DALL-E 3)
+- **sentence-transformers** - 한국어 임베딩 (RAG)
 - **Pydantic 2.x** - 데이터 검증
 - **python-jose + bcrypt** - JWT 인증
 
@@ -125,7 +126,14 @@ docker-compose up --build -d
 
 #### 4단계: DB 마이그레이션 (최초 1회)
 ```bash
+# pgvector 확장 활성화 (RAG 벡터 검색용)
+docker-compose exec postgres psql -U dearme -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
+# 마이그레이션 적용
 docker-compose exec backend alembic upgrade head
+
+# 기존 일기 임베딩 생성 (RAG용)
+docker-compose exec backend python -m scripts.embed_diaries
 ```
 
 #### 5단계: 접속 확인
@@ -242,8 +250,14 @@ Cloudflare Tunnel은 별도 SSL 인증서 없이 HTTPS를 제공합니다.
 # 프로덕션 빌드 + 실행
 docker-compose -f docker-compose.prod.yml --env-file .env.production up --build -d
 
+# pgvector 확장 활성화 (RAG 벡터 검색용)
+docker-compose -f docker-compose.prod.yml exec postgres psql -U ${DB_USER} -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
 # DB 마이그레이션
 docker-compose -f docker-compose.prod.yml exec backend alembic upgrade head
+
+# 기존 일기 임베딩 생성 (RAG용)
+docker-compose -f docker-compose.prod.yml exec backend python -m scripts.embed_diaries
 ```
 
 #### 5단계: 상태 확인
@@ -408,6 +422,10 @@ docker-compose -f docker-compose.prod.yml exec backend alembic upgrade head
   - 성격 특성 오버라이드
   - 커스텀 인사말
 - 페르소나와 자기 성찰 대화
+- **RAG (Retrieval-Augmented Generation)**
+  - 대화 시 관련 일기를 벡터 검색으로 참조
+  - 한국어 특화 임베딩 모델 (`jhgan/ko-sroberta-multitask`)
+  - 프라이버시 보호: 일기 본문 미노출, 제목/날짜/기분만 활용
 
 ### 친구 시스템
 - 사용자명으로 친구 검색
@@ -583,6 +601,9 @@ docker-compose -f docker-compose.prod.yml exec backend alembic upgrade head
 
 ### DB 마이그레이션
 ```bash
+# pgvector 확장 활성화 (최초 1회)
+docker-compose exec postgres psql -U dearme -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
 # 마이그레이션 생성
 docker-compose exec backend alembic revision --autogenerate -m "description"
 
@@ -591,6 +612,18 @@ docker-compose exec backend alembic upgrade head
 
 # 마이그레이션 롤백
 docker-compose exec backend alembic downgrade -1
+```
+
+### RAG 임베딩 관리
+```bash
+# 기존 일기 임베딩 생성 (마이그레이션 후 최초 1회)
+docker-compose exec backend python -m scripts.embed_diaries
+
+# 모든 일기 임베딩 강제 재생성
+docker-compose exec backend python -m scripts.embed_diaries --force
+
+# 특정 사용자의 일기만 임베딩
+docker-compose exec backend python -m scripts.embed_diaries --user-id 1
 ```
 
 ### 테스트

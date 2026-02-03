@@ -29,6 +29,11 @@ langchain==0.3.0
 langchain-openai==0.2.0
 langchain-core==0.3.0
 
+# RAG / Vector Search
+pgvector==0.2.4
+sentence-transformers==2.2.2
+torch==2.1.2
+
 # Testing
 pytest==7.4.3
 pytest-asyncio==0.21.1
@@ -49,6 +54,9 @@ httpx==0.25.2
 | pydantic | 2.12.5 | 데이터 검증 및 직렬화 |
 | openai | 1.109.1 | OpenAI API 클라이언트 |
 | langchain | 0.3.0 | LLM 통합 프레임워크 |
+| pgvector | 0.2.4 | PostgreSQL 벡터 검색 확장 |
+| sentence-transformers | 2.2.2 | 한국어 임베딩 모델 (RAG) |
+| torch | 2.1.2 | 딥러닝 프레임워크 |
 
 ---
 
@@ -114,7 +122,7 @@ httpx==0.25.2
 
 | 서비스 | 이미지 | 용도 |
 |--------|--------|------|
-| PostgreSQL | postgres:15 | 데이터베이스 |
+| PostgreSQL | pgvector/pgvector:pg15 | 데이터베이스 (벡터 검색 지원) |
 | Backend | python:3.11-slim | FastAPI 서버 |
 | Frontend (DEV) | node:20-alpine | Vite 개발 서버 |
 | Frontend (PROD) | nginx:alpine | 정적 파일 서빙 |

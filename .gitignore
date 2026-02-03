@@ -33,6 +33,7 @@ frontend/dist/
 # IDE
 .vscode/
 .idea/
+.cursor/
 *.swp
 *.swo
 *~
@@ -43,6 +44,9 @@ Thumbs.db
 
 # Docker
 docker-compose.override.yml
+
+# Database data (PostgreSQL volumes)
+data/
 
 # Alembic
 backend/alembic/versions/*.pyc

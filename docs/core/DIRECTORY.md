@@ -24,6 +24,7 @@ dear-me/
 │   │   ├── models/
 │   │   │   ├── user.py               # User 모델
 │   │   │   ├── diary.py              # Diary 모델
+│   │   │   ├── diary_embedding.py    # DiaryEmbedding 모델 (RAG용)
 │   │   │   ├── persona.py            # Persona 모델
 │   │   │   ├── friendship.py         # Friendship 모델
 │   │   │   └── chat.py               # PersonaChat, ChatMessage 모델
@@ -36,9 +37,10 @@ dear-me/
 │   │   ├── services/
 │   │   │   ├── auth_service.py       # 인증 로직
 │   │   │   ├── diary_service.py      # 일기 비즈니스 로직
+│   │   │   ├── embedding_service.py  # 임베딩 서비스 (RAG용)
 │   │   │   ├── persona_service.py    # 페르소나 생성/대화 (LLM)
 │   │   │   ├── friend_service.py     # 친구 관리 로직
-│   │   │   └── chat_service.py       # 채팅 로직
+│   │   │   └── chat_service.py       # 채팅 로직 (RAG 통합)
 │   │   ├── constants/
 │   │   │   ├── moods.py              # 기분 상수 (happy, sad, ...)
 │   │   │   ├── weather.py            # 날씨 상수 (sunny, rainy, ...)
@@ -52,6 +54,10 @@ dear-me/
 │   │   │   ├── 004_create_friendships.py
 │   │   │   └── 005_create_chats.py
 │   │   └── env.py                    # Alembic 환경 설정
+│   ├── scripts/
+│   │   ├── seed_data.py              # 시드 데이터 생성
+│   │   ├── seed_contents.py          # 시드 데이터 내용
+│   │   └── embed_diaries.py          # 일기 임베딩 배치 스크립트 (RAG)
 │   ├── tests/
 │   │   ├── conftest.py               # pytest 설정
 │   │   ├── test_auth.py

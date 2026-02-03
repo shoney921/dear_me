@@ -1,7 +1,10 @@
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, EmailStr, Field
+
+
+RagContextLevel = Literal["minimal", "standard", "detailed"]
 
 
 class UserBase(BaseModel):
@@ -16,11 +19,13 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     username: Optional[str] = Field(None, min_length=2, max_length=50)
     profile_image: Optional[str] = None
+    rag_context_level: Optional[RagContextLevel] = None
 
 
 class UserResponse(UserBase):
     id: int
     profile_image: Optional[str] = None
+    rag_context_level: Optional[RagContextLevel] = None
     is_active: bool
     created_at: datetime
 

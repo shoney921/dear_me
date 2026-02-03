@@ -1,0 +1,19 @@
+# PostgreSQL data volumes
+data/
+
+# Node modules (already in .gitignore but explicit for Claude)
+node_modules/
+
+# Python cache
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Build outputs
+frontend/dist/
+
+# IDE
+.vscode/
+.idea/
+.cursor/

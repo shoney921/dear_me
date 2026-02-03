@@ -8,6 +8,7 @@ from app.models.subscription import Subscription, SubscriptionPlan, Subscription
 from app.models.usage import DailyUsage
 from app.models.mental_analysis import MentalAnalysis, OverallStatus
 from app.models.mental_report import MentalReport, ReportType, TrendType
+from app.models.diary_embedding import DiaryEmbedding
 
 __all__ = [
     "User",
@@ -26,4 +27,5 @@ __all__ = [
     "MentalReport",
     "ReportType",
     "TrendType",
+    "DiaryEmbedding",
 ]

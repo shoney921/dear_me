@@ -24,3 +24,6 @@ class Diary(Base):
     mental_analysis = relationship(
         "MentalAnalysis", back_populates="diary", uselist=False, cascade="all, delete-orphan"
     )
+    embedding = relationship(
+        "DiaryEmbedding", back_populates="diary", uselist=False, cascade="all, delete-orphan"
+    )

@@ -9,16 +9,17 @@
 name: dearme-dev
 
 services:
-  # PostgreSQL Database (개발)
+  # PostgreSQL Database (개발) - pgvector 확장 포함
   postgres:
-    image: postgres:15
+    image: pgvector/pgvector:pg15
     container_name: dearme-dev-postgres
     environment:
       POSTGRES_USER: ${DB_USER:-dearme}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-dearme123}
       POSTGRES_DB: ${DB_NAME:-dearme}
     volumes:
-      - postgres_data_dev:/var/lib/postgresql/data
+      # 외장 SSD에 데이터 저장 (bind mount)
+      - ./data/postgres:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
@@ -74,5 +75,4 @@ networks:
   dearme-dev-network:
     driver: bridge
 
-volumes:
-  postgres_data_dev:
+volumes: {}

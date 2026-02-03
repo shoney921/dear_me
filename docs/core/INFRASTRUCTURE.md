@@ -8,9 +8,9 @@
 version: '3.8'
 
 services:
-  # PostgreSQL 데이터베이스
+  # PostgreSQL 데이터베이스 (pgvector 확장 포함)
   postgres:
-    image: postgres:15
+    image: pgvector/pgvector:pg15
     container_name: dearme-postgres
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
@@ -72,9 +72,9 @@ volumes:
 version: '3.8'
 
 services:
-  # PostgreSQL 데이터베이스 (내부 네트워크만)
+  # PostgreSQL 데이터베이스 (pgvector 확장 포함, 내부 네트워크만)
   postgres:
-    image: postgres:15
+    image: pgvector/pgvector:pg15
     container_name: dearme-postgres
     environment:
       POSTGRES_USER: ${DB_USER}
@@ -407,6 +407,9 @@ docker-compose logs -f backend
 ### DB 마이그레이션
 
 ```bash
+# pgvector 확장 활성화 (최초 1회)
+docker-compose exec postgres psql -U dearme -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
 # 마이그레이션 생성
 docker-compose exec backend alembic revision --autogenerate -m "Add diaries table"
 
@@ -415,6 +418,19 @@ docker-compose exec backend alembic upgrade head
 
 # 마이그레이션 롤백
 docker-compose exec backend alembic downgrade -1
+```
+
+### RAG 임베딩 관리
+
+```bash
+# 기존 일기 임베딩 생성 (최초 1회)
+docker-compose exec backend python -m scripts.embed_diaries
+
+# 모든 일기 임베딩 강제 재생성
+docker-compose exec backend python -m scripts.embed_diaries --force
+
+# 특정 사용자의 일기만 임베딩
+docker-compose exec backend python -m scripts.embed_diaries --user-id 1
 ```
 
 ### 테스트

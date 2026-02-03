@@ -17,6 +17,7 @@ from app.schemas.diary import DiaryCreate, DiaryResponse, DiaryUpdate, DiaryList
 from app.constants.prompts import DIARY_PROMPT_SUGGESTION
 from app.services.milestone_service import MilestoneService
 from app.services.mental_service import MentalService
+from app.services.embedding_service import EmbeddingService
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +76,13 @@ async def create_diary(
     # Check for milestone achievements
     milestone_service = MilestoneService(db)
     milestone_service.check_milestones(current_user)
+
+    # RAG용 임베딩 생성 (비동기 백그라운드 처리)
+    try:
+        EmbeddingService.create_or_update_diary_embedding(db, diary)
+        logger.info(f"Embedding created for diary {diary.id}")
+    except Exception as e:
+        logger.warning(f"Embedding creation failed for diary {diary.id}: {e}")
 
     # 멘탈 분석 + 피드백 자동 생성 (일기 작성 시 미리 처리)
     try:
@@ -351,6 +359,13 @@ async def update_diary(
     db.refresh(diary)
 
     biz_log.diary_update(current_user.username, diary_id)
+
+    # RAG용 임베딩 업데이트
+    try:
+        EmbeddingService.create_or_update_diary_embedding(db, diary)
+        logger.info(f"Embedding updated for diary {diary.id}")
+    except Exception as e:
+        logger.warning(f"Embedding update failed for diary {diary.id}: {e}")
 
     # 일기 수정 시 멘탈 분석 재실행
     try:
