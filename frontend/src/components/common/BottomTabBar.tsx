@@ -28,7 +28,7 @@ export default function BottomTabBar() {
   return (
     <>
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pb-safe sm:hidden">
-        <div className="flex h-14 items-center justify-around">
+        <div className="flex h-[68px] items-center justify-around">
           {tabs.map((tab) => {
             const Icon = tab.icon
             const active = isActive(tab.path)

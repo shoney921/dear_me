@@ -42,7 +42,7 @@ export default function MoreMenu({ isOpen, onClose }: MoreMenuProps) {
       />
 
       {/* Menu Panel */}
-      <div className="fixed bottom-14 left-0 right-0 z-50 animate-slide-up rounded-t-2xl border-t bg-background pb-safe sm:hidden">
+      <div className="fixed bottom-[68px] left-0 right-0 z-50 animate-slide-up rounded-t-2xl border-t bg-background pb-safe sm:hidden">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <span className="text-sm font-medium text-muted-foreground">더보기</span>
           <button
