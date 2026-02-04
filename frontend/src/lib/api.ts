@@ -13,6 +13,9 @@ export const api = axios.create({
   },
 })
 
+// 401 에러로 인한 로그아웃 처리 중복 방지 플래그
+let isLoggingOut = false
+
 // Request interceptor - 토큰 추가
 api.interceptors.request.use(
   (config) => {
@@ -37,11 +40,26 @@ api.interceptors.response.use(
       const isAuthPage = currentPath === '/login' || currentPath === '/register'
 
       // 인증 페이지가 아닌 곳에서 401 에러 발생 시에만 리다이렉트
-      if (!isAuthPage) {
+      // 이미 로그아웃 처리 중이면 중복 실행 방지
+      if (!isAuthPage && !isLoggingOut) {
+        isLoggingOut = true
+
+        console.log('[Auth] 401 Unauthorized - 로그아웃 처리')
+
+        // 토큰 제거
         localStorage.removeItem('access_token')
+        localStorage.removeItem('auth-storage')
+
         // TanStack Query 캐시 초기화
         queryClient.clear()
+
+        // 로그인 페이지로 리다이렉트
         window.location.href = '/login'
+
+        // 리다이렉트 후 플래그 리셋 (다음 세션을 위해)
+        setTimeout(() => {
+          isLoggingOut = false
+        }, 1000)
       }
     }
     return Promise.reject(error)

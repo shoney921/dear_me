@@ -247,6 +247,189 @@ cd frontend && npx tsc --noEmit
 
 ---
 
+## 프로덕션 배포
+
+### ⚠️ 중요: 배포 전 체크리스트
+
+**배포 시 반드시 프론트엔드 버전을 업데이트해야 합니다!**
+
+#### 1. 버전 업데이트 (필수)
+
+```bash
+# frontend/src/lib/version.ts 파일 수정
+export const APP_VERSION = '1.0.1'  # 버전 증가 (예: 1.0.0 -> 1.0.1)
+```
+
+**왜 필요한가?**
+- 배포 후 기존 사용자의 localStorage에 저장된 토큰/상태가 새 코드와 충돌할 수 있음
+- 버전이 변경되면 앱이 자동으로 localStorage를 초기화하여 깨끗한 상태로 시작
+- 무한 리로드, 401 에러 루프 등의 문제를 사전에 방지
+
+#### 2. 버전 관리 규칙
+
+```
+major.minor.patch
+
+- major: 대규모 변경 (API 구조 변경, 전체 리팩토링)
+- minor: 새 기능 추가, 중간 규모 변경
+- patch: 버그 수정, 작은 개선
+
+예시:
+- 1.0.0 -> 1.0.1 (버그 수정)
+- 1.0.1 -> 1.1.0 (새 기능 추가)
+- 1.1.0 -> 2.0.0 (대규모 구조 변경)
+```
+
+### 프로덕션 배포 절차
+
+#### Step 1: 버전 업데이트 및 커밋
+
+```bash
+# 1. 버전 업데이트
+vim frontend/src/lib/version.ts
+# APP_VERSION을 업데이트 (예: 1.0.0 -> 1.0.1)
+
+# 2. 변경사항 커밋
+git add .
+git commit -m "chore: 버전 1.0.1로 업데이트"
+```
+
+#### Step 2: 프로덕션 빌드 및 배포
+
+```bash
+# 전체 서비스 빌드 및 실행
+docker-compose -f docker-compose.prod.yml --env-file .env.production up --build -d
+
+# 컨테이너 준비 대기
+sleep 15
+
+# pgvector 확장 활성화 (최초 1회만 필요)
+docker-compose -f docker-compose.prod.yml exec postgres psql -U dearme -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
+# DB 마이그레이션 적용
+docker-compose -f docker-compose.prod.yml exec backend alembic upgrade head
+
+# 일기 임베딩 생성 (최초 1회 또는 필요 시)
+docker-compose -f docker-compose.prod.yml exec backend python -m scripts.embed_diaries
+```
+
+#### Step 3: 배포 확인
+
+```bash
+# 컨테이너 상태 확인
+docker-compose -f docker-compose.prod.yml ps
+
+# 로그 확인
+docker-compose -f docker-compose.prod.yml logs -f
+
+# 백엔드 로그만 확인
+docker-compose -f docker-compose.prod.yml logs -f backend
+
+# 프론트엔드 로그만 확인
+docker-compose -f docker-compose.prod.yml logs -f frontend
+```
+
+### 접속 URL (프로덕션)
+
+- Frontend: http://localhost:8080 (또는 Cloudflare Tunnel 도메인)
+- Backend API: http://localhost:8001
+- API 문서: http://localhost:8001/docs
+
+### 배포 후 자동 처리 과정
+
+사용자가 배포 후 처음 접속하면:
+
+1. ✅ 앱이 버전 체크 실행 (`initVersion()`)
+2. ✅ 버전 변경 감지 → localStorage 자동 초기화
+3. ✅ 로그인 페이지로 자동 리다이렉트
+4. ✅ 사용자 재로그인 → 정상 작동
+
+**사용자는 아무것도 할 필요 없이 자동으로 깨끗한 상태로 시작됩니다!**
+
+### 긴급 배포 (핫픽스)
+
+버그 긴급 수정 시:
+
+```bash
+# 1. 버전 패치 업데이트 (예: 1.0.1 -> 1.0.2)
+vim frontend/src/lib/version.ts
+
+# 2. 프론트엔드만 재빌드
+docker-compose -f docker-compose.prod.yml up --build -d frontend
+
+# 3. 백엔드만 재빌드
+docker-compose -f docker-compose.prod.yml up --build -d backend
+```
+
+### 배포 롤백
+
+문제 발생 시 이전 버전으로 롤백:
+
+```bash
+# 1. 이전 커밋으로 되돌리기
+git log --oneline -5  # 이전 커밋 확인
+git revert <commit-hash>
+
+# 2. 재배포
+docker-compose -f docker-compose.prod.yml up --build -d
+
+# 또는 컨테이너만 재시작
+docker-compose -f docker-compose.prod.yml restart
+```
+
+### 컨테이너 중지 및 제거
+
+```bash
+# 컨테이너 중지
+docker-compose -f docker-compose.prod.yml stop
+
+# 컨테이너 중지 및 제거
+docker-compose -f docker-compose.prod.yml down
+
+# 볼륨까지 제거 (데이터 삭제 주의!)
+docker-compose -f docker-compose.prod.yml down -v
+```
+
+### 배포 트러블슈팅
+
+#### 문제: 무한 리로드 발생
+
+**원인**: 버전 업데이트를 깜빡했거나, localStorage 충돌
+
+**해결**:
+```bash
+# 1. 버전 확인
+cat frontend/src/lib/version.ts
+
+# 2. 버전이 이전과 동일하면 업데이트
+vim frontend/src/lib/version.ts  # 버전 증가
+
+# 3. 프론트엔드 재배포
+docker-compose -f docker-compose.prod.yml up --build -d frontend
+```
+
+#### 문제: 401 Unauthorized 에러
+
+**원인**: 토큰 불일치 또는 만료
+
+**해결**:
+- 브라우저에서 로그아웃 후 재로그인
+- 또는 브라우저 개발자 도구 → Application → Local Storage → 전체 삭제
+
+#### 문제: 스트리밍 응답 안됨
+
+**원인**: Nginx 버퍼링 설정
+
+**확인**:
+```bash
+# nginx 설정 확인
+docker-compose -f docker-compose.prod.yml exec frontend cat /etc/nginx/conf.d/default.conf
+
+# proxy_buffering off 설정이 있는지 확인
+```
+
+---
+
 ## 코딩 컨벤션
 
 ### Backend (Python)

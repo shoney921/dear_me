@@ -457,24 +457,382 @@ docker-compose down -v
 
 ## 프로덕션 배포
 
-### 배포 명령어
+### ⚠️ 배포 전 필수 체크리스트
+
+**중요: 배포 시 반드시 프론트엔드 버전을 업데이트해야 합니다!**
+
+#### 1. 버전 업데이트 (필수)
 
 ```bash
-# 환경 파일 설정
-cp .env.example .env.production
-# .env.production 편집
+# frontend/src/lib/version.ts 파일 수정
+vim frontend/src/lib/version.ts
 
-# 프로덕션 빌드 및 실행
-docker-compose -f docker-compose.prod.yml --env-file .env.production up -d --build
-
-# 로그 확인
-docker-compose -f docker-compose.prod.yml logs -f
-
-# 종료
-docker-compose -f docker-compose.prod.yml down
+# APP_VERSION 업데이트
+export const APP_VERSION = '1.0.1'  # 이전 버전에서 증가
 ```
 
+**왜 필요한가?**
+- 배포 후 기존 사용자의 localStorage에 저장된 토큰/상태가 새 코드와 충돌 방지
+- 버전 변경 시 앱이 자동으로 localStorage를 초기화하여 깨끗한 상태로 시작
+- 무한 리로드, 401 에러 루프 등의 문제를 사전에 방지
+
+#### 2. 버전 관리 규칙
+
+```
+Semantic Versioning: major.minor.patch
+
+- major: 대규모 변경 (API 구조 변경, 전체 리팩토링)
+  예: 1.5.3 -> 2.0.0
+
+- minor: 새 기능 추가, 중간 규모 변경
+  예: 1.5.3 -> 1.6.0
+
+- patch: 버그 수정, 작은 개선
+  예: 1.5.3 -> 1.5.4
+```
+
+#### 3. 배포 전 테스트
+
+```bash
+# 타입 체크
+cd frontend && npx tsc --noEmit
+
+# 백엔드 테스트
+docker-compose exec backend pytest
+
+# 빌드 테스트 (로컬)
+docker-compose -f docker-compose.prod.yml build
+```
+
+---
+
+### 프로덕션 배포 전체 절차
+
+#### Step 1: 환경 설정
+
+```bash
+# 환경 파일 준비
+cp .env.example .env.production
+
+# .env.production 편집
+vim .env.production
+
+# 필수 환경 변수:
+# - DB_USER, DB_PASSWORD, DB_NAME
+# - SECRET_KEY (강력한 랜덤 문자열)
+# - OPENAI_API_KEY
+# - CLOUDFLARE_TUNNEL_TOKEN (옵션)
+```
+
+#### Step 2: 버전 업데이트 및 커밋
+
+```bash
+# 1. 버전 업데이트
+vim frontend/src/lib/version.ts
+# APP_VERSION을 증가 (예: 1.0.0 -> 1.0.1)
+
+# 2. 변경사항 스테이징
+git add .
+
+# 3. 변경사항 커밋
+git commit -m "chore: 버전 1.0.1로 업데이트 및 배포 준비"
+
+# 4. (옵션) 원격 저장소에 푸시
+git push origin master
+```
+
+#### Step 3: 프로덕션 빌드 및 배포
+
+```bash
+# 전체 서비스 빌드 및 실행
+docker-compose -f docker-compose.prod.yml --env-file .env.production up --build -d
+
+# 컨테이너 준비 대기 (약 15초)
+sleep 15
+
+# pgvector 확장 활성화 (최초 1회만 필요)
+docker-compose -f docker-compose.prod.yml exec postgres psql -U ${DB_USER} -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
+# DB 마이그레이션 적용
+docker-compose -f docker-compose.prod.yml exec backend alembic upgrade head
+
+# 일기 임베딩 생성 (최초 1회 또는 필요 시)
+docker-compose -f docker-compose.prod.yml exec backend python -m scripts.embed_diaries
+
+# 컨테이너 상태 확인
+docker-compose -f docker-compose.prod.yml ps
+```
+
+#### Step 4: 배포 확인
+
+```bash
+# 전체 로그 확인
+docker-compose -f docker-compose.prod.yml logs -f
+
+# 백엔드만 확인
+docker-compose -f docker-compose.prod.yml logs -f backend
+
+# 프론트엔드만 확인
+docker-compose -f docker-compose.prod.yml logs -f frontend
+
+# 헬스 체크
+curl http://localhost:8001/health
+curl http://localhost:8080
+```
+
+---
+
+### 배포 후 자동 처리 과정
+
+사용자가 배포 후 처음 접속하면:
+
+1. ✅ 앱이 버전 체크 실행 (`initVersion()`)
+2. ✅ 버전 변경 감지 → localStorage 자동 초기화
+3. ✅ 로그인 페이지로 자동 리다이렉트
+4. ✅ 사용자 재로그인 → 정상 작동
+
+**사용자는 수동으로 캐시를 지울 필요 없이 자동으로 깨끗한 상태로 시작!**
+
+---
+
+### 긴급 배포 (핫픽스)
+
+버그 긴급 수정 시:
+
+```bash
+# 1. 버전 패치 업데이트 (예: 1.0.1 -> 1.0.2)
+vim frontend/src/lib/version.ts
+
+# 2. 변경사항 커밋
+git add .
+git commit -m "fix: 긴급 버그 수정 (v1.0.2)"
+
+# 3. 프론트엔드만 재빌드 (빠른 배포)
+docker-compose -f docker-compose.prod.yml up --build -d frontend
+
+# 또는 백엔드만 재빌드
+docker-compose -f docker-compose.prod.yml up --build -d backend
+
+# 또는 전체 재빌드
+docker-compose -f docker-compose.prod.yml up --build -d
+```
+
+---
+
+### 배포 롤백
+
+문제 발생 시 이전 버전으로 롤백:
+
+```bash
+# 1. Git 이력 확인
+git log --oneline -5
+
+# 2. 이전 커밋으로 되돌리기
+git revert <commit-hash>
+
+# 또는 하드 리셋 (주의!)
+git reset --hard <commit-hash>
+
+# 3. 재배포
+docker-compose -f docker-compose.prod.yml up --build -d
+
+# 4. 확인
+docker-compose -f docker-compose.prod.yml ps
+docker-compose -f docker-compose.prod.yml logs -f
+```
+
+---
+
+### 컨테이너 관리
+
+#### 재시작
+
+```bash
+# 전체 재시작
+docker-compose -f docker-compose.prod.yml restart
+
+# 특정 서비스만 재시작
+docker-compose -f docker-compose.prod.yml restart backend
+docker-compose -f docker-compose.prod.yml restart frontend
+```
+
+#### 중지 및 제거
+
+```bash
+# 컨테이너 중지 (볼륨 유지)
+docker-compose -f docker-compose.prod.yml stop
+
+# 컨테이너 중지 및 제거 (볼륨 유지)
+docker-compose -f docker-compose.prod.yml down
+
+# 볼륨까지 제거 (⚠️ 데이터 삭제 주의!)
+docker-compose -f docker-compose.prod.yml down -v
+```
+
+#### 로그 관리
+
+```bash
+# 로그 실시간 확인
+docker-compose -f docker-compose.prod.yml logs -f
+
+# 마지막 100줄만 확인
+docker-compose -f docker-compose.prod.yml logs --tail=100
+
+# 특정 서비스 로그
+docker-compose -f docker-compose.prod.yml logs -f backend
+
+# 로그 파일 크기 확인
+docker inspect --format='{{.LogPath}}' dearme-prod-backend
+```
+
+---
+
+### 배포 트러블슈팅
+
+#### 문제 1: 무한 리로드 발생
+
+**증상**: 사용자가 로그인 후 페이지가 계속 새로고침됨
+
+**원인**:
+- 버전 업데이트를 깜빡했거나
+- localStorage와 새 코드 간 충돌
+
+**해결**:
+```bash
+# 1. 현재 버전 확인
+cat frontend/src/lib/version.ts
+
+# 2. 버전이 이전과 동일하면 업데이트
+vim frontend/src/lib/version.ts  # 버전 증가
+
+# 3. 재배포
+docker-compose -f docker-compose.prod.yml up --build -d frontend
+
+# 4. 사용자에게 브라우저 새로고침 요청
+```
+
+**브라우저 측 임시 해결 (사용자 안내용)**:
+1. 개발자 도구 → Application → Local Storage → 전체 삭제
+2. 페이지 새로고침 → 재로그인
+
+---
+
+#### 문제 2: 401 Unauthorized 에러
+
+**증상**: API 요청마다 401 에러 발생
+
+**원인**:
+- 토큰 만료 또는 불일치
+- 백엔드 SECRET_KEY 변경
+
+**해결**:
+```bash
+# 1. 백엔드 로그 확인
+docker-compose -f docker-compose.prod.yml logs backend | grep "401"
+
+# 2. SECRET_KEY 확인
+cat .env.production | grep SECRET_KEY
+
+# 3. 토큰 관련 로그 확인
+docker-compose -f docker-compose.prod.yml logs backend | grep "Auth"
+
+# 4. 필요시 사용자 재로그인 유도
+```
+
+---
+
+#### 문제 3: 스트리밍 응답 작동 안함
+
+**증상**: 채팅 시 응답이 한 번에 나타남 (타이핑 효과 없음)
+
+**원인**: Nginx 버퍼링 설정 문제
+
+**확인**:
+```bash
+# 1. Nginx 설정 확인
+docker-compose -f docker-compose.prod.yml exec frontend cat /etc/nginx/conf.d/default.conf
+
+# 2. proxy_buffering off 설정 확인
+# /api/ location에 다음 설정이 있어야 함:
+# proxy_buffering off;
+# proxy_cache off;
+# chunked_transfer_encoding on;
+```
+
+**해결**:
+```bash
+# 1. nginx.conf 수정
+vim frontend/nginx.conf
+
+# 2. 프론트엔드 재빌드
+docker-compose -f docker-compose.prod.yml up --build -d frontend
+```
+
+---
+
+#### 문제 4: 컨테이너 시작 실패
+
+**증상**: `docker-compose ps`에서 컨테이너가 Exit 상태
+
+**원인**:
+- 환경 변수 누락
+- DB 연결 실패
+- 포트 충돌
+
+**해결**:
+```bash
+# 1. 컨테이너 로그 확인
+docker-compose -f docker-compose.prod.yml logs <service-name>
+
+# 2. 환경 변수 확인
+docker-compose -f docker-compose.prod.yml config
+
+# 3. 포트 사용 확인
+lsof -i :8080  # 프론트엔드
+lsof -i :8001  # 백엔드
+lsof -i :5433  # PostgreSQL
+
+# 4. DB 연결 테스트
+docker-compose -f docker-compose.prod.yml exec postgres psql -U ${DB_USER} -d ${DB_NAME}
+
+# 5. 컨테이너 재생성
+docker-compose -f docker-compose.prod.yml up -d --force-recreate <service-name>
+```
+
+---
+
+#### 문제 5: 디스크 공간 부족
+
+**증상**: 빌드 실패 또는 "No space left on device" 에러
+
+**원인**: Docker 이미지/컨테이너/볼륨 누적
+
+**해결**:
+```bash
+# 1. 디스크 사용량 확인
+docker system df
+
+# 2. 사용하지 않는 이미지 제거
+docker image prune -a
+
+# 3. 사용하지 않는 컨테이너 제거
+docker container prune
+
+# 4. 사용하지 않는 볼륨 제거 (⚠️ 주의)
+docker volume prune
+
+# 5. 전체 클린업 (⚠️ 주의)
+docker system prune -a --volumes
+
+# 6. 빌드 캐시 확인
+docker builder prune
+```
+
+---
+
 ### Cloudflare Tunnel 설정
+
+#### 초기 설정
 
 1. Cloudflare 대시보드에서 Zero Trust > Tunnels 접속
 2. 새 터널 생성
@@ -482,7 +840,47 @@ docker-compose -f docker-compose.prod.yml down
 4. Public hostname 설정:
    - Subdomain: `dearme` (또는 원하는 이름)
    - Domain: 등록된 도메인
-   - Service: `http://nginx:80`
+   - Service: `http://frontend:80`
+
+#### 터널 상태 확인
+
+```bash
+# 터널 컨테이너 로그 확인
+docker-compose -f docker-compose.prod.yml logs -f cloudflared
+
+# 터널 상태 확인
+docker-compose -f docker-compose.prod.yml ps cloudflared
+```
+
+---
+
+### 모니터링 및 성능
+
+#### 리소스 사용량 확인
+
+```bash
+# 컨테이너 리소스 사용량
+docker stats
+
+# 특정 컨테이너만
+docker stats dearme-prod-backend
+
+# 디스크 사용량
+docker system df
+```
+
+#### 성능 최적화
+
+```bash
+# 백엔드 워커 수 조정
+# backend/Dockerfile.prod에서 --workers 값 변경
+# 권장: CPU 코어 수 * 2 + 1
+
+# 로그 로테이션 확인
+# docker-compose.prod.yml의 logging 설정 확인
+# max-size: 10m
+# max-file: 3
+```
 
 ---
 
