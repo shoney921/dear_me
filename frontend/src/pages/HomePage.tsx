@@ -39,7 +39,7 @@ export default function HomePage() {
   )
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Welcome Section */}
       <div className="rounded-lg bg-gradient-to-r from-primary/10 to-primary/5 p-6">
         <h1 className="text-2xl font-bold">

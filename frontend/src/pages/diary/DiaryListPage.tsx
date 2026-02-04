@@ -71,9 +71,9 @@ export default function DiaryListPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-1.5">
           {data?.items.map((diary) => (
-            <Link key={diary.id} to={`/diaries/${diary.id}`}>
+            <Link key={diary.id} to={`/diaries/${diary.id}`} className="block">
               <Card className="cursor-pointer transition-shadow hover:shadow-md">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
