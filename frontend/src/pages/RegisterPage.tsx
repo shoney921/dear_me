@@ -148,6 +148,9 @@ export default function RegisterPage() {
       <div className="flex min-h-screen items-center justify-center p-4 bg-white/60 backdrop-blur-sm">
         <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
+          <div className="flex justify-center mb-2">
+            <img src="/dearme-logo.png" alt="DearMe" className="h-16 w-16" />
+          </div>
           <CardTitle className="text-2xl">회원가입</CardTitle>
           <CardDescription>DearMe에 오신 것을 환영합니다</CardDescription>
         </CardHeader>

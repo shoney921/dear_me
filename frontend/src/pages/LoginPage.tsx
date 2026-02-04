@@ -131,6 +131,9 @@ export default function LoginPage() {
       <div className="flex min-h-screen items-center justify-center p-4 bg-white/60 backdrop-blur-sm">
         <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
+          <div className="flex justify-center mb-2">
+            <img src="/dearme-logo.png" alt="DearMe" className="h-16 w-16" />
+          </div>
           <CardTitle className="text-2xl">DearMe</CardTitle>
           <CardDescription>일기 기반 AI 페르소나 서비스</CardDescription>
         </CardHeader>

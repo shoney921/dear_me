@@ -33,6 +33,7 @@ export default function Header() {
       <div className="container mx-auto flex h-14 items-center px-4">
         {/* Logo */}
         <Link to="/" className="mr-6 flex items-center space-x-2">
+          <img src="/dearme-logo.png" alt="DearMe" className="h-8 w-8" />
           <span className="text-xl font-bold text-primary">DearMe</span>
         </Link>
 
