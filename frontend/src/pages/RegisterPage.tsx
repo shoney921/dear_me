@@ -141,8 +141,12 @@ export default function RegisterPage() {
   const hasError = (field: string) => touched[field] && fieldErrors[field as keyof FieldErrors]
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div 
+      className="min-h-screen bg-cover bg-center bg-fixed"
+      style={{ backgroundImage: 'url(/dearme-background.png)' }}
+    >
+      <div className="flex min-h-screen items-center justify-center p-4 bg-white/60 backdrop-blur-sm">
+        <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">회원가입</CardTitle>
           <CardDescription>DearMe에 오신 것을 환영합니다</CardDescription>
@@ -265,6 +269,7 @@ export default function RegisterPage() {
           </CardFooter>
         </form>
       </Card>
+      </div>
     </div>
   )
 }

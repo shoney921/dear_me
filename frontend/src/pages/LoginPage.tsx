@@ -124,8 +124,12 @@ export default function LoginPage() {
   const hasError = (field: string) => touched[field] && fieldErrors[field as keyof FieldErrors]
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div 
+      className="min-h-screen bg-cover bg-center bg-fixed"
+      style={{ backgroundImage: 'url(/dearme-background.png)' }}
+    >
+      <div className="flex min-h-screen items-center justify-center p-4 bg-white/60 backdrop-blur-sm">
+        <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">DearMe</CardTitle>
           <CardDescription>일기 기반 AI 페르소나 서비스</CardDescription>
@@ -192,6 +196,7 @@ export default function LoginPage() {
           </CardFooter>
         </form>
       </Card>
+      </div>
     </div>
   )
 }

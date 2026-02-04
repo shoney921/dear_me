@@ -59,28 +59,49 @@ export const chatService = {
       throw new Error('No response body')
     }
 
+    let buffer = ''
+
     try {
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
 
-        const chunk = decoder.decode(value, { stream: true })
-        const lines = chunk.split('\n')
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+
+        // 마지막 라인은 불완전할 수 있으므로 버퍼에 보관
+        buffer = lines.pop() || ''
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
-            const data = JSON.parse(line.slice(6))
+            try {
+              const data = JSON.parse(line.slice(6))
 
-            if (data.type === 'user_message') {
-              onUserMessage(data.message)
-            } else if (data.type === 'chunk') {
-              onChunk(data.content)
-            } else if (data.type === 'done') {
-              onDone(data.message)
-            } else if (data.type === 'error') {
-              onError(data.content)
+              if (data.type === 'user_message') {
+                onUserMessage(data.message)
+              } else if (data.type === 'chunk') {
+                onChunk(data.content)
+              } else if (data.type === 'done') {
+                onDone(data.message)
+              } else if (data.type === 'error') {
+                onError(data.content)
+              }
+            } catch (parseError) {
+              console.warn('JSON parse error, skipping line:', line)
             }
           }
+        }
+      }
+
+      // 스트림 종료 후 남은 버퍼 처리
+      if (buffer.startsWith('data: ')) {
+        try {
+          const data = JSON.parse(buffer.slice(6))
+          if (data.type === 'done') {
+            onDone(data.message)
+          }
+        } catch {
+          // 무시
         }
       }
     } catch (error) {

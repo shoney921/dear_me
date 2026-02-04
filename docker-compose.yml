@@ -21,7 +21,7 @@ services:
       # 외장 SSD에 데이터 저장 (bind mount)
       - ./data/postgres:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5434:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-dearme}"]
       interval: 5s
@@ -44,7 +44,7 @@ services:
     volumes:
       - ./backend:/app
     ports:
-      - "8000:8000"
+      - "8002:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -59,7 +59,7 @@ services:
       dockerfile: Dockerfile
     container_name: dearme-dev-frontend
     environment:
-      - VITE_API_URL=http://localhost:8000
+      - VITE_API_URL=http://localhost:8002
     volumes:
       - ./frontend:/app
       - /app/node_modules
