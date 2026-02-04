@@ -29,7 +29,7 @@ export default function Header() {
   const unreadCount = unreadData?.unread_count ?? 0
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 hidden sm:block">
       <div className="container mx-auto flex h-14 items-center px-4">
         {/* Logo */}
         <Link to="/" className="mr-6 flex items-center space-x-2">
