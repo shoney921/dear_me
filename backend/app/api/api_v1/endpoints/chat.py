@@ -1,9 +1,15 @@
+import json
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
 
 from app.core.deps import get_db, get_current_active_user
 from app.core.business_logger import biz_log
+
+logger = logging.getLogger(__name__)
 from app.models.chat import PersonaChat, ChatMessage
 from app.models.persona import Persona
 from app.models.user import User
@@ -171,6 +177,68 @@ async def send_message(
 
     biz_log.chat_response(persona_name, response_message.content)
     return response_message
+
+
+@router.post("/{chat_id}/messages/stream")
+async def send_message_stream(
+    chat_id: int,
+    message_in: MessageCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """스트리밍 메시지 전송 및 AI 응답 받기"""
+    chat = db.query(PersonaChat).filter(
+        PersonaChat.id == chat_id,
+        PersonaChat.user_id == current_user.id,
+    ).first()
+
+    if not chat:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Chat not found",
+        )
+
+    # 내 페르소나와의 대화인 경우 일일 제한 확인
+    if chat.is_own_persona:
+        subscription_service = SubscriptionService(db)
+        can_send, error_message = subscription_service.can_send_chat_message(current_user)
+        if not can_send:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=error_message,
+            )
+
+    # 페르소나 이름 조회
+    persona = db.query(Persona).filter(Persona.id == chat.persona_id).first()
+    persona_name = persona.name if persona else "Unknown"
+
+    biz_log.chat_message(current_user.username, persona_name, message_in.content)
+
+    # 스트리밍 응답 생성
+    chat_service = ChatService(db)
+
+    async def event_generator():
+        try:
+            async for event in chat_service.send_message_stream(chat, message_in.content):
+                yield event
+        except Exception as e:
+            logger.error(f"Streaming error: {e}")
+            yield "data: " + json.dumps({"type": "error", "content": str(e)}) + "\n\n"
+        finally:
+            # 메시지 전송 후 사용량 증가 (내 페르소나 대화인 경우)
+            if chat.is_own_persona:
+                subscription_service = SubscriptionService(db)
+                subscription_service.increment_chat_usage(current_user)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        }
+    )
 
 
 @router.get("/{chat_id}/messages", response_model=list[MessageResponse])

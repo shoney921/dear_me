@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Send, Info, X } from 'lucide-react'
 
 import { chatService } from '@/services/chatService'
@@ -11,9 +11,6 @@ import { cn } from '@/lib/utils'
 import { getApiErrorMessage } from '@/lib/error'
 import type { ChatWithMessages, ChatMessage } from '@/types/chat'
 
-// 임시 ID 생성 (낙관적 업데이트용)
-const generateTempId = () => -Date.now()
-
 export default function PersonaChatPage() {
   const { chatId } = useParams<{ chatId: string }>()
   const navigate = useNavigate()
@@ -23,6 +20,8 @@ export default function PersonaChatPage() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [showDisclaimer, setShowDisclaimer] = useState(true)
+  const [streamingMessage, setStreamingMessage] = useState('')
+  const [isStreaming, setIsStreaming] = useState(false)
 
   // chatId가 없으면 페르소나 페이지로 리다이렉트
   useEffect(() => {
@@ -39,92 +38,111 @@ export default function PersonaChatPage() {
     gcTime: 5 * 60 * 1000, // 5분간 캐시 유지
   })
 
-  const sendMutation = useMutation({
-    mutationFn: (content: string) => chatService.sendMessage(Number(chatId), content),
+  const handleSendMessage = async (content: string) => {
+    setIsStreaming(true)
+    setStreamingMessage('')
+    setError('')
 
-    // 즉시 사용자 메시지 표시 (낙관적 업데이트)
-    onMutate: async (content: string) => {
-      console.log('[onMutate] 시작 - 사용자 메시지:', content)
+    const currentChat = queryClient.getQueryData<ChatWithMessages>(['chat', chatId])
+    if (!currentChat) return
 
-      await queryClient.cancelQueries({ queryKey: ['chat', chatId] })
-      console.log('[onMutate] 쿼리 취소 완료')
+    // Optimistic Update: 사용자 메시지 즉시 표시
+    const tempUserMessage: ChatMessage = {
+      id: Date.now(), // 임시 ID
+      chat_id: Number(chatId),
+      content: content,
+      is_user: true,
+      created_at: new Date().toISOString(),
+    }
 
-      const previousChat = queryClient.getQueryData<ChatWithMessages>(['chat', chatId])
-      console.log('[onMutate] 이전 채팅 데이터:', previousChat?.messages.length, '개 메시지')
+    const optimisticChat = {
+      ...currentChat,
+      messages: [...currentChat.messages, tempUserMessage],
+    }
+    queryClient.setQueryData<ChatWithMessages>(['chat', chatId], optimisticChat)
 
-      if (previousChat) {
-        const optimisticUserMessage: ChatMessage = {
-          id: generateTempId(),
-          chat_id: Number(chatId),
-          content: content,
-          is_user: true,
-          created_at: new Date().toISOString(),
+    try {
+      await chatService.sendMessageStream(
+        Number(chatId),
+        content,
+        // onChunk: 스트리밍 청크 받기
+        (chunk: string) => {
+          setStreamingMessage((prev) => prev + chunk)
+        },
+        // onUserMessage: 서버에서 확인된 사용자 메시지 (임시 메시지 교체)
+        (userMessage: ChatMessage) => {
+          const latestChat = queryClient.getQueryData<ChatWithMessages>(['chat', chatId])
+          if (latestChat) {
+            // 임시 메시지를 실제 메시지로 교체
+            const updatedMessages = latestChat.messages.map(msg =>
+              msg.id === tempUserMessage.id ? userMessage : msg
+            )
+            queryClient.setQueryData<ChatWithMessages>(['chat', chatId], {
+              ...latestChat,
+              messages: updatedMessages,
+            })
+          }
+        },
+        // onDone: AI 응답 완료
+        (aiMessage: ChatMessage) => {
+          const latestChat = queryClient.getQueryData<ChatWithMessages>(['chat', chatId])
+          if (latestChat) {
+            const updatedChat = {
+              ...latestChat,
+              messages: [...latestChat.messages, aiMessage],
+            }
+            queryClient.setQueryData<ChatWithMessages>(['chat', chatId], updatedChat)
+          }
+          setIsStreaming(false)
+          setStreamingMessage('')
+        },
+        // onError: 에러 처리
+        (errorMsg: string) => {
+          setError(errorMsg)
+          setIsStreaming(false)
+          setStreamingMessage('')
+
+          // 에러 시 optimistic update 롤백
+          const latestChat = queryClient.getQueryData<ChatWithMessages>(['chat', chatId])
+          if (latestChat) {
+            const rollbackMessages = latestChat.messages.filter(msg => msg.id !== tempUserMessage.id)
+            queryClient.setQueryData<ChatWithMessages>(['chat', chatId], {
+              ...latestChat,
+              messages: rollbackMessages,
+            })
+          }
         }
-
-        const updatedChat = {
-          ...previousChat,
-          messages: [...previousChat.messages, optimisticUserMessage],
-        }
-
-        console.log('[onMutate] 낙관적 업데이트 적용 - 새 메시지 개수:', updatedChat.messages.length)
-        queryClient.setQueryData<ChatWithMessages>(['chat', chatId], updatedChat)
-
-        // 업데이트 후 확인
-        const afterUpdate = queryClient.getQueryData<ChatWithMessages>(['chat', chatId])
-        console.log('[onMutate] 업데이트 후 메시지 개수:', afterUpdate?.messages.length)
-      }
-
-      console.log('[onMutate] 완료')
-
-      return { previousChat }
-    },
-
-    // AI 응답 추가
-    onSuccess: (aiMessage) => {
-      console.log('[onSuccess] AI 응답 받음:', aiMessage)
-
-      const currentChat = queryClient.getQueryData<ChatWithMessages>(['chat', chatId])
-      console.log('[onSuccess] 현재 채팅 데이터:', currentChat?.messages.length, '개 메시지')
-
-      if (currentChat) {
-        const updatedChat = {
-          ...currentChat,
-          messages: [...currentChat.messages, aiMessage],
-        }
-
-        console.log('[onSuccess] AI 응답 추가 - 새 메시지 개수:', updatedChat.messages.length)
-        queryClient.setQueryData<ChatWithMessages>(['chat', chatId], updatedChat)
-      }
-
-      setError('')
-      console.log('[onSuccess] 완료')
-    },
-
-    // 실패 시 롤백
-    onError: (err, _variables, context) => {
-      console.log('[onError] 에러 발생:', err)
-
-      if (context?.previousChat) {
-        queryClient.setQueryData(['chat', chatId], context.previousChat)
-        console.log('[onError] 롤백 완료')
-      }
+      )
+    } catch (err) {
       setError(getApiErrorMessage(err))
-    },
-  })
+      setIsStreaming(false)
+      setStreamingMessage('')
+
+      // 에러 시 optimistic update 롤백
+      const latestChat = queryClient.getQueryData<ChatWithMessages>(['chat', chatId])
+      if (latestChat) {
+        const rollbackMessages = latestChat.messages.filter(msg => msg.id !== tempUserMessage.id)
+        queryClient.setQueryData<ChatWithMessages>(['chat', chatId], {
+          ...latestChat,
+          messages: rollbackMessages,
+        })
+      }
+    }
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!message.trim() || sendMutation.isPending) return
+    if (!message.trim() || isStreaming) return
 
     const messageToSend = message.trim()
     setMessage('') // 입력창 즉시 클리어
-    sendMutation.mutate(messageToSend)
+    handleSendMessage(messageToSend)
   }
 
   // Auto scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [chat?.messages])
+  }, [chat?.messages, streamingMessage])
 
   if (isLoading) {
     return <PageLoading />
@@ -204,7 +222,15 @@ export default function PersonaChatPage() {
                 </div>
               </div>
             ))}
-            {sendMutation.isPending && (
+            {isStreaming && streamingMessage && (
+              <div className="flex justify-start">
+                <div className="max-w-[80%] rounded-lg bg-secondary px-4 py-2">
+                  <p className="whitespace-pre-wrap">{streamingMessage}</p>
+                  <span className="animate-pulse">▊</span>
+                </div>
+              </div>
+            )}
+            {isStreaming && !streamingMessage && (
               <div className="flex justify-start">
                 <div className="max-w-[80%] rounded-lg bg-secondary px-4 py-2">
                   <p className="text-muted-foreground">페르소나가 생각하는 중...</p>
@@ -228,12 +254,12 @@ export default function PersonaChatPage() {
             placeholder="메시지를 입력하세요..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            disabled={sendMutation.isPending}
+            disabled={isStreaming}
           />
           <Button
             type="submit"
             size="icon"
-            disabled={!message.trim() || sendMutation.isPending}
+            disabled={!message.trim() || isStreaming}
           >
             <Send className="h-4 w-4" />
           </Button>

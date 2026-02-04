@@ -265,6 +265,199 @@ class ChatService:
             logger.error(f"AI response generation failed: {e}")
             return self._get_default_response(persona.name)
 
+    async def _generate_response_stream(
+        self,
+        persona: Persona,
+        user_message: str,
+        chat_history: List[ChatMessage],
+        is_own_persona: bool,
+        rag_context: str = "",
+    ):
+        """AI 스트리밍 응답 생성"""
+        # 대화 내역 포맷팅
+        history_text = ""
+        for msg in chat_history[:-1]:  # 마지막 메시지(현재) 제외
+            role = "사용자" if msg.is_user else persona.name
+            history_text += f"{role}: {msg.content}\n"
+
+        # traits 파싱
+        traits = persona.traits
+        if isinstance(traits, str):
+            try:
+                traits = json.loads(traits)
+            except (json.JSONDecodeError, TypeError):
+                traits = [traits]
+        traits_str = ", ".join(traits) if isinstance(traits, list) else str(traits)
+
+        # OpenAI API 키가 없으면 기본 응답
+        if not settings.OPENAI_API_KEY:
+            yield self._get_default_response(persona.name)
+            return
+
+        try:
+            from openai import AsyncOpenAI
+
+            client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+
+            # 프롬프트 선택 (RAG 컨텍스트가 있으면 RAG 프롬프트 사용)
+            has_rag_context = rag_context and "관련 기억이 없습니다" not in rag_context
+
+            if is_own_persona:
+                # 임시 페르소나인 경우 별도 프롬프트 사용 (RAG 미적용)
+                if persona.level == "temporary":
+                    prompt = TEMPORARY_PERSONA_CHAT_PROMPT.format(
+                        persona_name=persona.name,
+                        personality=persona.personality,
+                        traits=traits_str,
+                        speaking_style=persona.speaking_style or "",
+                        chat_history=history_text,
+                        user_message=user_message,
+                    )
+                elif has_rag_context:
+                    # RAG 컨텍스트가 있으면 RAG 프롬프트 사용
+                    prompt = RAG_PERSONA_CHAT_PROMPT.format(
+                        persona_name=persona.name,
+                        personality=persona.personality,
+                        traits=traits_str,
+                        speaking_style=persona.speaking_style or "",
+                        rag_context=rag_context,
+                        chat_history=history_text,
+                        user_message=user_message,
+                    )
+                else:
+                    prompt = PERSONA_CHAT_PROMPT.format(
+                        persona_name=persona.name,
+                        personality=persona.personality,
+                        traits=traits_str,
+                        speaking_style=persona.speaking_style or "",
+                        chat_history=history_text,
+                        user_message=user_message,
+                    )
+            else:
+                # 친구 페르소나인 경우
+                owner = persona.user
+                if has_rag_context:
+                    prompt = RAG_FRIEND_PERSONA_CHAT_PROMPT.format(
+                        persona_name=persona.name,
+                        owner_name=owner.username if owner else "친구",
+                        personality=persona.personality,
+                        traits=traits_str,
+                        speaking_style=persona.speaking_style or "",
+                        rag_context=rag_context,
+                        chat_history=history_text,
+                        user_message=user_message,
+                    )
+                else:
+                    prompt = FRIEND_PERSONA_CHAT_PROMPT.format(
+                        persona_name=persona.name,
+                        owner_name=owner.username if owner else "친구",
+                        personality=persona.personality,
+                        traits=traits_str,
+                        speaking_style=persona.speaking_style or "",
+                        chat_history=history_text,
+                        user_message=user_message,
+                    )
+
+            stream = await client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": f"You are {persona.name}. Respond in Korean."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.8,
+                max_tokens=300,
+                stream=True,
+            )
+
+            async for chunk in stream:
+                if chunk.choices[0].delta.content is not None:
+                    yield chunk.choices[0].delta.content
+
+        except Exception as e:
+            logger.error(f"AI streaming response generation failed: {e}")
+            yield self._get_default_response(persona.name)
+
+    async def send_message_stream(self, chat: PersonaChat, content: str):
+        """스트리밍 메시지 전송 및 AI 응답 생성"""
+        # 사용자 메시지 저장
+        user_message = ChatMessage(
+            chat_id=chat.id,
+            content=content,
+            is_user=True,
+        )
+        self.db.add(user_message)
+        self.db.commit()
+        self.db.refresh(user_message)
+
+        # 페르소나 정보 가져오기
+        persona = self.db.query(Persona).filter(Persona.id == chat.persona_id).first()
+
+        if not persona:
+            logger.error(f"Persona not found for chat {chat.id}")
+            yield "data: " + json.dumps({"type": "error", "content": "페르소나를 찾을 수 없어요."}) + "\n\n"
+            return
+
+        # 사용자 메시지 전송 (클라이언트에게 확인용)
+        yield "data: " + json.dumps({
+            "type": "user_message",
+            "message": {
+                "id": user_message.id,
+                "chat_id": user_message.chat_id,
+                "content": user_message.content,
+                "is_user": True,
+                "created_at": user_message.created_at.isoformat(),
+            }
+        }) + "\n\n"
+
+        # 이전 대화 내역 가져오기 (최근 10개)
+        previous_messages = self.db.query(ChatMessage).filter(
+            ChatMessage.chat_id == chat.id
+        ).order_by(ChatMessage.created_at.desc()).limit(10).all()
+
+        # 사용자의 RAG 컨텍스트 레벨 결정
+        context_level = self._get_context_level(persona.user_id, chat.is_own_persona)
+
+        # RAG: 유사 일기 검색
+        rag_context = await self._get_rag_context(
+            user_message=content,
+            persona_user_id=persona.user_id,
+            context_level=context_level,
+        )
+
+        # AI 스트리밍 응답 생성
+        full_response = ""
+        async for chunk in self._generate_response_stream(
+            persona=persona,
+            user_message=content,
+            chat_history=list(reversed(previous_messages)),
+            is_own_persona=chat.is_own_persona,
+            rag_context=rag_context,
+        ):
+            full_response += chunk
+            yield "data: " + json.dumps({"type": "chunk", "content": chunk}) + "\n\n"
+
+        # AI 응답 저장
+        ai_message = ChatMessage(
+            chat_id=chat.id,
+            content=full_response,
+            is_user=False,
+        )
+        self.db.add(ai_message)
+        self.db.commit()
+        self.db.refresh(ai_message)
+
+        # 완료 메시지 전송
+        yield "data: " + json.dumps({
+            "type": "done",
+            "message": {
+                "id": ai_message.id,
+                "chat_id": ai_message.chat_id,
+                "content": ai_message.content,
+                "is_user": False,
+                "created_at": ai_message.created_at.isoformat(),
+            }
+        }) + "\n\n"
+
     def _get_default_response(self, persona_name: str) -> str:
         """기본 응답 (AI 실패 시)"""
         return f"안녕! 나는 {persona_name}이야. 지금은 AI 서비스가 연결되지 않았어. 나중에 다시 이야기하자!"

@@ -1,4 +1,4 @@
-from datetime import datetime, date, timezone
+from datetime import datetime, date
 from typing import Optional
 
 from sqlalchemy.orm import Session
@@ -27,7 +27,7 @@ class SubscriptionService:
         return (
             subscription.plan == SubscriptionPlan.PREMIUM
             and subscription.status == SubscriptionStatus.ACTIVE
-            and (subscription.expires_at is None or subscription.expires_at > datetime.now(timezone.utc))
+            and (subscription.expires_at is None or subscription.expires_at > datetime.utcnow())
         )
 
     def get_plan_limits(self, user: User) -> dict:
