@@ -10,9 +10,9 @@ from app.core.config import settings
 from app.constants.prompts import (
     MENTAL_ANALYSIS_PROMPT,
     FEEDBACK_GENERATION_PROMPT,
-    BOOK_RECOMMENDATION_PROMPT,
     MENTAL_REPORT_INSIGHTS_PROMPT,
 )
+from app.constants.books import get_book_recommendations
 from app.models.diary import Diary
 from app.models.mental_analysis import MentalAnalysis, OverallStatus
 from app.models.mental_report import MentalReport, ReportType, TrendType
@@ -286,8 +286,14 @@ class MentalService:
         }
         return feedbacks.get(status, feedbacks[OverallStatus.NEUTRAL.value])
 
-    async def recommend_books(self, user_id: int) -> dict:
-        """현재 멘탈 상태에 맞는 책 추천"""
+    def recommend_books(self, user_id: int) -> dict:
+        """
+        현재 멘탈 상태에 맞는 책 추천
+
+        AI 호출 없이 검증된 책 데이터베이스에서 추천합니다.
+        - 비용: 0 (AI 호출 없음)
+        - 장점: 항상 실제 존재하는 책만 추천
+        """
         analysis = self.get_current_analysis(user_id)
 
         if not analysis:
@@ -296,93 +302,22 @@ class MentalService:
                 "based_on_status": "unknown",
             }
 
-        books_data = await self._recommend_books_with_ai(analysis)
+        # 검증된 책 데이터베이스에서 추천
+        books_data = get_book_recommendations(
+            overall_status=analysis.overall_status,
+            emotional_stability_score=analysis.emotional_stability_score,
+            vitality_score=analysis.vitality_score,
+            self_esteem_score=analysis.self_esteem_score,
+            positivity_score=analysis.positivity_score,
+            social_connection_score=analysis.social_connection_score,
+            resilience_score=analysis.resilience_score,
+            count=3,
+        )
+
         return {
             "books": books_data.get("books", []),
             "based_on_status": analysis.overall_status,
         }
-
-    async def _recommend_books_with_ai(self, analysis: MentalAnalysis) -> dict:
-        """AI를 사용하여 책 추천"""
-        if not settings.OPENAI_API_KEY:
-            return self._get_default_books(analysis.overall_status)
-
-        try:
-            from openai import AsyncOpenAI
-
-            client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-
-            prompt = BOOK_RECOMMENDATION_PROMPT.format(
-                overall_status=analysis.overall_status,
-                emotional_stability_score=analysis.emotional_stability_score,
-                vitality_score=analysis.vitality_score,
-                self_esteem_score=analysis.self_esteem_score,
-                positivity_score=analysis.positivity_score,
-                social_connection_score=analysis.social_connection_score,
-                resilience_score=analysis.resilience_score,
-            )
-
-            response = await client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are a bibliotherapy expert. Recommend real, existing books. Always respond in valid JSON format."
-                    },
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=1000,
-            )
-
-            content = response.choices[0].message.content
-            return json.loads(content)
-
-        except Exception as e:
-            logger.error(f"Book recommendation AI failed: {e}")
-            return self._get_default_books(analysis.overall_status)
-
-    def _get_default_books(self, status: str) -> dict:
-        """기본 책 추천 (AI 실패 시)"""
-        default_books = {
-            OverallStatus.GOOD.value: [
-                {
-                    "title": "미라클 모닝",
-                    "author": "할 엘로드",
-                    "description": "아침 루틴을 통해 인생을 변화시키는 방법",
-                    "reason": "긍정적인 에너지를 더 확장해보세요",
-                    "category": "자기계발"
-                },
-            ],
-            OverallStatus.NEUTRAL.value: [
-                {
-                    "title": "오늘 밤, 세계에서 이 사랑이 사라진다 해도",
-                    "author": "이치조 미사키",
-                    "description": "소중한 일상의 가치를 깨닫게 하는 소설",
-                    "reason": "일상의 소소한 행복을 발견해보세요",
-                    "category": "소설"
-                },
-            ],
-            OverallStatus.CONCERNING.value: [
-                {
-                    "title": "오늘 조금 힘들었던 당신에게",
-                    "author": "김재식",
-                    "description": "지친 마음을 위로하는 따뜻한 에세이",
-                    "reason": "당신의 마음에 따뜻한 위로가 필요해 보여요",
-                    "category": "에세이"
-                },
-            ],
-            OverallStatus.CRITICAL.value: [
-                {
-                    "title": "죽고 싶지만 떡볶이는 먹고 싶어",
-                    "author": "백세희",
-                    "description": "우울과 함께 살아가는 이야기",
-                    "reason": "비슷한 경험을 한 사람의 이야기가 위로가 될 거예요",
-                    "category": "에세이"
-                },
-            ],
-        }
-        return {"books": default_books.get(status, default_books[OverallStatus.NEUTRAL.value])}
 
     async def generate_weekly_report(self, user_id: int) -> Optional[MentalReport]:
         """주간 리포트 생성"""

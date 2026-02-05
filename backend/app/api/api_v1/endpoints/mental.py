@@ -219,13 +219,19 @@ async def generate_feedback(
 
 
 @router.get("/book-recommendations", response_model=BookRecommendationResponse)
-async def get_book_recommendations(
+def get_book_recommendations(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """현재 멘탈 상태에 맞는 책 추천"""
+    """
+    현재 멘탈 상태에 맞는 책 추천
+
+    AI 호출 없이 검증된 책 데이터베이스에서 추천합니다.
+    - 항상 실제 존재하는 책만 추천
+    - 상태별 + 가장 낮은 점수 영역에 맞는 책 추천
+    """
     mental_service = MentalService(db)
-    recommendations = await mental_service.recommend_books(current_user.id)
+    recommendations = mental_service.recommend_books(current_user.id)
 
     if not recommendations.get("books"):
         raise HTTPException(
