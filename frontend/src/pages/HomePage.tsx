@@ -13,7 +13,7 @@ import { PersonaGreeting, EmotionCalendar, WeeklyInsightCard } from '@/component
 import { MIN_DIARIES_FOR_PERSONA } from '@/lib/constants'
 
 export default function HomePage() {
-  const { user } = useAuthStore()
+  useAuthStore()
 
   const { data: diaryCount, isLoading: isLoadingDiary } = useQuery({
     queryKey: ['diaryCount'],
@@ -56,15 +56,59 @@ export default function HomePage() {
       {personaStatus?.has_persona && myPersona ? (
         <PersonaGreeting persona={myPersona} insight={weeklyInsight} />
       ) : (
-        /* Default Welcome Section */
-        <div className="rounded-lg bg-gradient-to-r from-primary/10 to-primary/5 p-6">
-          <h1 className="text-2xl font-bold">
-            안녕하세요, {user?.username}님!
-          </h1>
-          <p className="mt-2 text-muted-foreground">
-            오늘도 DearMe와 함께 특별한 하루를 기록해보세요.
-          </p>
-        </div>
+        /* Persona Status Card - show at top when no persona */
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              페르소나 현황
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {/* Quiz CTA */}
+              <div className="rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-4 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-500">
+                    <Sparkles className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">성격 퀴즈로 바로 시작!</p>
+                    <p className="text-sm text-muted-foreground">간단한 5가지 질문에 답해보세요</p>
+                  </div>
+                  <Link to="/quiz">
+                    <Button size="sm" className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
+                      시작
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+
+              <p className="text-muted-foreground">
+                또는 일기를 {MIN_DIARIES_FOR_PERSONA}개 이상 작성하면 더 정교한 AI 페르소나가 생성됩니다.
+              </p>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>진행률</span>
+                  <span>
+                    {diaryCount?.count || 0} / {MIN_DIARIES_FOR_PERSONA}개
+                  </span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-secondary">
+                  <div
+                    className="h-full bg-primary transition-all"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+              {personaStatus?.can_generate && (
+                <Link to="/persona">
+                  <Button variant="outline">페르소나 생성하기</Button>
+                </Link>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Emotion Calendar + Weekly Insight - Desktop: side by side, Mobile: stacked */}
@@ -155,70 +199,6 @@ export default function HomePage() {
         </Link>
       </div>
 
-      {/* Persona Status */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            페르소나 현황
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {personaStatus?.has_persona ? (
-            <div className="space-y-4">
-              <p className="text-muted-foreground">
-                페르소나가 생성되었습니다! 지금 바로 대화해보세요.
-              </p>
-              <Link to="/persona">
-                <Button>페르소나와 대화하기</Button>
-              </Link>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {/* Quiz CTA */}
-              <div className="rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-4 mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-500">
-                    <Sparkles className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium">성격 퀴즈로 바로 시작!</p>
-                    <p className="text-sm text-muted-foreground">간단한 5가지 질문에 답해보세요</p>
-                  </div>
-                  <Link to="/quiz">
-                    <Button size="sm" className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
-                      시작
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-
-              <p className="text-muted-foreground">
-                또는 일기를 {MIN_DIARIES_FOR_PERSONA}개 이상 작성하면 더 정교한 AI 페르소나가 생성됩니다.
-              </p>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>진행률</span>
-                  <span>
-                    {diaryCount?.count || 0} / {MIN_DIARIES_FOR_PERSONA}개
-                  </span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-secondary">
-                  <div
-                    className="h-full bg-primary transition-all"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-              </div>
-              {personaStatus?.can_generate && (
-                <Link to="/persona">
-                  <Button variant="outline">페르소나 생성하기</Button>
-                </Link>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   )
 }
