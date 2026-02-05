@@ -9,11 +9,11 @@
 ### 핵심 기능
 
 1. **일기 작성** - 매일 일기를 작성하고 기분/날씨 태그 추가
-2. **페르소나 생성** - 일기 7개 이상 작성 시 AI가 나만의 페르소나 생성
-3. **자기 성찰 대화** - 내 페르소나와 대화하며 자기 이해
-4. **친구 페르소나 대화** - 친구의 일기 기반 페르소나와 대화 (일기는 비공개)
-5. **멀티모달 캐릭터** - DALL-E 3 기반 AI 캐릭터 이미지 생성 및 진화
-6. **프리미엄 구독** - 다양한 캐릭터 스타일 및 추가 기능
+2. **성격 퀴즈** - 일기 없이도 퀴즈로 임시 페르소나 생성
+3. **페르소나 생성** - 일기 7개 이상 작성 시 AI가 나만의 페르소나 생성 (레벨업)
+4. **자기 성찰 대화** - 내 페르소나와 대화하며 자기 이해
+5. **친구 페르소나 대화** - 친구의 일기 기반 페르소나와 대화 (일기는 비공개)
+6. **심리 케어** - 일기 기반 멘탈 분석 및 맞춤 피드백/책 추천
 
 ### 핵심 가치
 
@@ -437,22 +437,25 @@ docker-compose -f docker-compose.prod.yml exec backend alembic upgrade head
 - 읽음/안읽음 상태 관리
 - 실시간 알림 뱃지
 
-### 멀티모달 캐릭터 (Phase 4)
-- DALL-E 3 기반 캐릭터 이미지 생성
-- 6가지 스타일 지원:
-  - 애니메이션 (무료)
-  - 수채화, 픽셀 아트, 3D, 실사, 카툰 (프리미엄)
-- 캐릭터 진화 시스템 (일기 30개마다 진화)
-- 진화 히스토리 열람
+### 성격 퀴즈 & 페르소나 레벨
+- 일기 없이도 성격 퀴즈로 임시 페르소나 즉시 생성
+- 페르소나 레벨 시스템:
+  - 임시 (퀴즈 기반) → 기본 (일기 7개) → 성장 (일기 15개)
+- 일기 작성으로 페르소나 진화 가능
 
-### 프리미엄 구독 (Phase 4)
+### 심리 케어 (Phase 4)
+- 일기 기반 AI 멘탈 분석
+- 6축 레이더 차트 (정서 안정, 활력, 자존감, 긍정성, 사회적 연결, 회복탄력성)
+- 맞춤 피드백 및 응원 메시지
+- 현재 감정에 맞는 책 추천
+- 주간/월간 리포트
+
+### 프리미엄 구독
 - 월간/연간 구독 플랜
 - 프리미엄 혜택:
-  - 캐릭터 스타일 무제한 변경
-  - 친구 캐릭터 무제한 열람
-  - 케미 분석 기능
-  - 시즌 스킨 선행 접근
-  - 광고 제거
+  - 페르소나 대화 무제한
+  - 친구 페르소나 무제한 열람
+  - 상세 감정 리포트
 
 ---
 
@@ -497,22 +500,32 @@ docker-compose -f docker-compose.prod.yml exec backend alembic upgrade head
 | POST | `/api/v1/chats` | 채팅 생성 |
 | POST | `/api/v1/chats/{id}/messages` | 메시지 전송 |
 
-### 캐릭터 (Phase 4)
+### 퀴즈
 | Method | Endpoint | 설명 |
 |--------|----------|------|
-| GET | `/api/v1/characters/me` | 내 캐릭터 |
-| GET | `/api/v1/characters/status` | 생성 가능 상태 |
-| GET | `/api/v1/characters/styles` | 스타일 목록 |
-| POST | `/api/v1/characters/generate` | 캐릭터 생성 |
-| PUT | `/api/v1/characters/me/style` | 스타일 변경 (프리미엄) |
-| POST | `/api/v1/characters/me/evolve` | 캐릭터 진화 |
+| GET | `/api/v1/quiz/questions` | 퀴즈 질문 목록 |
+| POST | `/api/v1/quiz/submit` | 퀴즈 제출 및 임시 페르소나 생성 |
+| GET | `/api/v1/quiz/persona-level` | 페르소나 레벨 정보 |
+| POST | `/api/v1/quiz/upgrade-persona` | 페르소나 레벨 업그레이드 |
 
-### 구독 (Phase 4)
+### 심리 케어
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/api/v1/mental/current` | 최근 멘탈 상태 |
+| GET | `/api/v1/mental/radar` | 레이더 차트 데이터 |
+| GET | `/api/v1/mental/history` | 분석 이력 |
+| GET | `/api/v1/mental/reports/weekly` | 주간 리포트 |
+| GET | `/api/v1/mental/reports/monthly` | 월간 리포트 |
+| POST | `/api/v1/mental/feedback` | 피드백 생성 |
+| GET | `/api/v1/mental/book-recommendations` | 책 추천 |
+
+### 구독
 | Method | Endpoint | 설명 |
 |--------|----------|------|
 | GET | `/api/v1/subscriptions/me` | 내 구독 정보 |
 | GET | `/api/v1/subscriptions/status` | 구독 상태 |
 | GET | `/api/v1/subscriptions/plans` | 플랜 목록 |
+| GET | `/api/v1/subscriptions/usage` | 사용량 현황 |
 | POST | `/api/v1/subscriptions/upgrade` | 프리미엄 업그레이드 |
 | POST | `/api/v1/subscriptions/cancel` | 구독 취소 |
 
@@ -582,18 +595,23 @@ docker-compose -f docker-compose.prod.yml exec backend alembic upgrade head
 - [x] 일기 수정 기능
 - [x] AI 일기 프롬프트 제안
 
-### Phase 4: 수익화 (완료)
-- [x] 프리미엄 구독 시스템
-- [x] 멀티모달 캐릭터 생성 (DALL-E 3)
-- [x] 캐릭터 스타일 변경 (프리미엄)
-- [x] 캐릭터 진화 시스템
-- [x] 진화 히스토리
+### Phase 4: 심리 케어 (완료)
+- [x] 멘탈 상태 분석 시스템
+- [x] 심리 인바디 체크 (6축 레이더 차트)
+- [x] 감정 기반 피드백
+- [x] 책 추천 기능
+- [x] 주간/월간 리포트
+
+### Phase 5: 온보딩 & 구독 (완료)
+- [x] 성격 퀴즈 기반 임시 페르소나 생성
+- [x] 페르소나 레벨 시스템 (임시 → 기본 → 성장)
+- [x] 프리미엄 구독 시스템 (테스트)
+- [x] 법적 페이지 (개인정보처리방침, 이용약관)
 
 ### 향후 계획
 - [ ] 결제 시스템 연동 (실제 결제)
-- [ ] 굿즈 제작 연동
-- [ ] 시즌 스킨 시스템
 - [ ] 케미 분석 기능
+- [ ] 멀티모달 캐릭터 생성 (DALL-E 3)
 
 ---
 
