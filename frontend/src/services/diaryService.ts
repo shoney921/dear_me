@@ -1,5 +1,8 @@
 import api from '@/lib/api'
-import type { Diary, DiaryCreate, DiaryUpdate, DiaryListResponse, DiaryStats, DiaryPromptSuggestionResponse } from '@/types/diary'
+import type {
+  Diary, DiaryCreate, DiaryUpdate, DiaryListResponse, DiaryStats,
+  DiaryPromptSuggestionResponse, DiaryCalendarResponse, WeeklyInsightResponse
+} from '@/types/diary'
 
 export const diaryService = {
   async getList(page = 1, perPage = 10, mood?: string): Promise<DiaryListResponse> {
@@ -44,6 +47,16 @@ export const diaryService = {
 
   async getPromptSuggestions(): Promise<DiaryPromptSuggestionResponse> {
     const response = await api.get<DiaryPromptSuggestionResponse>('/diaries/prompt-suggestions')
+    return response.data
+  },
+
+  async getCalendar(year: number, month: number): Promise<DiaryCalendarResponse> {
+    const response = await api.get<DiaryCalendarResponse>(`/diaries/calendar?year=${year}&month=${month}`)
+    return response.data
+  },
+
+  async getWeeklyInsight(): Promise<WeeklyInsightResponse> {
+    const response = await api.get<WeeklyInsightResponse>('/diaries/weekly-insight')
     return response.data
   },
 }

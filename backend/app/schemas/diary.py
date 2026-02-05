@@ -56,3 +56,25 @@ class DiaryPromptSuggestion(BaseModel):
 
 class DiaryPromptSuggestionResponse(BaseModel):
     prompts: list[DiaryPromptSuggestion]
+
+
+class DiaryCalendarItem(BaseModel):
+    diary_date: date
+    mood: Optional[str]
+    diary_id: int
+
+
+class DiaryCalendarResponse(BaseModel):
+    items: list[DiaryCalendarItem]
+    year: int
+    month: int
+
+
+class WeeklyInsightResponse(BaseModel):
+    diary_count: int
+    positive_ratio: float
+    positive_ratio_change: Optional[float]
+    current_streak: int
+    ai_summary: Optional[str]
+    last_diary_date: Optional[date]
+    dominant_mood: Optional[str]

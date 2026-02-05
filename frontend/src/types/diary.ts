@@ -49,3 +49,25 @@ export interface DiaryPromptSuggestion {
 export interface DiaryPromptSuggestionResponse {
   prompts: DiaryPromptSuggestion[]
 }
+
+export interface DiaryCalendarItem {
+  diary_date: string
+  mood: string | null
+  diary_id: number
+}
+
+export interface DiaryCalendarResponse {
+  items: DiaryCalendarItem[]
+  year: number
+  month: number
+}
+
+export interface WeeklyInsightResponse {
+  diary_count: number
+  positive_ratio: number
+  positive_ratio_change: number | null
+  current_streak: number
+  ai_summary: string | null
+  last_diary_date: string | null
+  dominant_mood: string | null
+}

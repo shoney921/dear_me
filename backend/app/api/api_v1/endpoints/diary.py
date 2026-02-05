@@ -13,7 +13,10 @@ from app.core.config import settings
 from app.core.business_logger import biz_log
 from app.models.diary import Diary
 from app.models.user import User
-from app.schemas.diary import DiaryCreate, DiaryResponse, DiaryUpdate, DiaryListResponse, DiaryStats, DiaryPromptSuggestionResponse
+from app.schemas.diary import (
+    DiaryCreate, DiaryResponse, DiaryUpdate, DiaryListResponse, DiaryStats,
+    DiaryPromptSuggestionResponse, DiaryCalendarResponse, DiaryCalendarItem, WeeklyInsightResponse
+)
 from app.constants.prompts import DIARY_PROMPT_SUGGESTION
 from app.services.milestone_service import MilestoneService
 from app.services.mental_service import MentalService
@@ -233,6 +236,170 @@ def get_diary_stats(
         mood_distribution=dict(mood_distribution),
         monthly_count=monthly_count,
         weekly_average=weekly_average,
+    )
+
+
+@router.get("/calendar", response_model=DiaryCalendarResponse)
+def get_diary_calendar(
+    year: int = Query(..., ge=2020, le=2100),
+    month: int = Query(..., ge=1, le=12),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """월별 일기 캘린더 데이터 조회"""
+    # Get first and last day of the month
+    first_day = date(year, month, 1)
+    if month == 12:
+        last_day = date(year + 1, 1, 1) - timedelta(days=1)
+    else:
+        last_day = date(year, month + 1, 1) - timedelta(days=1)
+
+    # Query diaries for the month
+    diaries = db.query(Diary).filter(
+        Diary.user_id == current_user.id,
+        Diary.diary_date >= first_day,
+        Diary.diary_date <= last_day,
+    ).all()
+
+    items = [
+        DiaryCalendarItem(
+            diary_date=d.diary_date,
+            mood=d.mood,
+            diary_id=d.id
+        )
+        for d in diaries
+    ]
+
+    return DiaryCalendarResponse(
+        items=items,
+        year=year,
+        month=month,
+    )
+
+
+@router.get("/weekly-insight", response_model=WeeklyInsightResponse)
+async def get_weekly_insight(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """이번 주 인사이트 조회"""
+    today = date.today()
+    # Get start of this week (Monday)
+    week_start = today - timedelta(days=today.weekday())
+    week_end = today
+
+    # Get start of last week
+    last_week_start = week_start - timedelta(days=7)
+    last_week_end = week_start - timedelta(days=1)
+
+    # This week's diaries
+    this_week_diaries = db.query(Diary).filter(
+        Diary.user_id == current_user.id,
+        Diary.diary_date >= week_start,
+        Diary.diary_date <= week_end,
+    ).all()
+
+    # Last week's diaries
+    last_week_diaries = db.query(Diary).filter(
+        Diary.user_id == current_user.id,
+        Diary.diary_date >= last_week_start,
+        Diary.diary_date <= last_week_end,
+    ).all()
+
+    diary_count = len(this_week_diaries)
+
+    # Calculate positive ratio
+    positive_moods = {'happy', 'excited', 'grateful', 'hopeful', 'calm'}
+
+    def calc_positive_ratio(diaries):
+        if not diaries:
+            return 0.0
+        mood_count = sum(1 for d in diaries if d.mood)
+        if mood_count == 0:
+            return 0.0
+        positive_count = sum(1 for d in diaries if d.mood in positive_moods)
+        return round(positive_count / mood_count, 2)
+
+    positive_ratio = calc_positive_ratio(this_week_diaries)
+    last_week_positive_ratio = calc_positive_ratio(last_week_diaries)
+
+    positive_ratio_change = None
+    if last_week_diaries:
+        positive_ratio_change = round(positive_ratio - last_week_positive_ratio, 2)
+
+    # Calculate current streak
+    all_diaries = db.query(Diary).filter(
+        Diary.user_id == current_user.id
+    ).order_by(Diary.diary_date.desc()).all()
+
+    current_streak = 0
+    if all_diaries:
+        diary_dates = sorted([d.diary_date for d in all_diaries], reverse=True)
+        check_date = today
+        if diary_dates[0] < today:
+            check_date = today - timedelta(days=1)
+
+        for diary_date in diary_dates:
+            if diary_date == check_date:
+                current_streak += 1
+                check_date -= timedelta(days=1)
+            elif diary_date < check_date:
+                break
+
+    # Get dominant mood this week
+    dominant_mood = None
+    if this_week_diaries:
+        mood_counts: dict[str, int] = defaultdict(int)
+        for d in this_week_diaries:
+            if d.mood:
+                mood_counts[d.mood] += 1
+        if mood_counts:
+            dominant_mood = max(mood_counts.keys(), key=lambda k: mood_counts[k])
+
+    # Get last diary date
+    last_diary_date = None
+    if all_diaries:
+        last_diary_date = all_diaries[0].diary_date
+
+    # Generate AI summary
+    ai_summary = None
+    if this_week_diaries and settings.OPENAI_API_KEY:
+        try:
+            from openai import OpenAI
+            client = OpenAI(api_key=settings.OPENAI_API_KEY)
+
+            diary_summaries = []
+            for d in this_week_diaries:
+                diary_summaries.append(f"- {d.diary_date}: {d.title} (기분: {d.mood or '없음'})")
+
+            prompt = f"""다음은 이번 주 사용자의 일기 목록입니다:
+{chr(10).join(diary_summaries)}
+
+이번 주의 핵심 감정이나 주제를 한 문장으로 요약해주세요.
+따뜻하고 공감하는 어조로 작성하고, 20자 이내로 짧게 작성해주세요.
+예시: "새로운 도전에 대한 설렘이 가득했어요"
+"""
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are a warm and empathetic diary assistant. Respond in Korean."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=100,
+            )
+            ai_summary = response.choices[0].message.content.strip().strip('"')
+        except Exception as e:
+            logger.warning(f"Failed to generate weekly AI summary: {e}")
+
+    return WeeklyInsightResponse(
+        diary_count=diary_count,
+        positive_ratio=positive_ratio,
+        positive_ratio_change=positive_ratio_change,
+        current_streak=current_streak,
+        ai_summary=ai_summary,
+        last_diary_date=last_diary_date,
+        dominant_mood=dominant_mood,
     )
 
 

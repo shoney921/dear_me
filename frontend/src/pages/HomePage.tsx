@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { PageLoading } from '@/components/ui/Loading'
 import { StreakCard } from '@/components/diary/StreakCard'
+import { PersonaGreeting, EmotionCalendar, WeeklyInsightCard } from '@/components/home'
 import { MIN_DIARIES_FOR_PERSONA } from '@/lib/constants'
 
 export default function HomePage() {
@@ -29,6 +30,17 @@ export default function HomePage() {
     queryFn: personaService.getStatus,
   })
 
+  const { data: myPersona } = useQuery({
+    queryKey: ['myPersona'],
+    queryFn: personaService.getMyPersona,
+    enabled: !!personaStatus?.has_persona,
+  })
+
+  const { data: weeklyInsight, isLoading: isLoadingInsight } = useQuery({
+    queryKey: ['weeklyInsight'],
+    queryFn: diaryService.getWeeklyInsight,
+  })
+
   if (isLoadingDiary || isLoadingPersona || isLoadingStats) {
     return <PageLoading />
   }
@@ -40,40 +52,54 @@ export default function HomePage() {
 
   return (
     <div className="space-y-5">
-      {/* Welcome Section */}
-      <div className="rounded-lg bg-gradient-to-r from-primary/10 to-primary/5 p-6">
-        <h1 className="text-2xl font-bold">
-          안녕하세요, {user?.username}님!
-        </h1>
-        <p className="mt-2 text-muted-foreground">
-          오늘도 DearMe와 함께 특별한 하루를 기록해보세요.
-        </p>
-      </div>
-
-      {/* Streak Card */}
-      {diaryStats && diaryStats.total_count > 0 && (
-        <StreakCard
-          currentStreak={diaryStats.current_streak}
-          longestStreak={diaryStats.longest_streak}
-          totalCount={diaryStats.total_count}
-          compact
-        />
+      {/* Persona Greeting - only show if persona exists */}
+      {personaStatus?.has_persona && myPersona ? (
+        <PersonaGreeting persona={myPersona} insight={weeklyInsight} />
+      ) : (
+        /* Default Welcome Section */
+        <div className="rounded-lg bg-gradient-to-r from-primary/10 to-primary/5 p-6">
+          <h1 className="text-2xl font-bold">
+            안녕하세요, {user?.username}님!
+          </h1>
+          <p className="mt-2 text-muted-foreground">
+            오늘도 DearMe와 함께 특별한 하루를 기록해보세요.
+          </p>
+        </div>
       )}
 
+      {/* Emotion Calendar + Weekly Insight - Desktop: side by side, Mobile: stacked */}
+      <div className="grid gap-4 lg:grid-cols-2 lg:items-stretch">
+        <EmotionCalendar className="h-full" />
+        <div className="flex flex-col gap-4 lg:h-full">
+          {!isLoadingInsight && weeklyInsight && (
+            <WeeklyInsightCard insight={weeklyInsight} className="flex-1" />
+          )}
+          {/* Streak Card - show only if has diaries */}
+          {diaryStats && diaryStats.total_count > 0 && (
+            <StreakCard
+              currentStreak={diaryStats.current_streak}
+              longestStreak={diaryStats.longest_streak}
+              totalCount={diaryStats.total_count}
+              compact
+            />
+          )}
+        </div>
+      </div>
+
       {/* Quick Actions */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Write Diary */}
         <Link to="/diaries/new">
           <Card className="cursor-pointer transition-shadow hover:shadow-md">
-            <CardContent className="flex items-center gap-4 p-6">
+            <CardContent className="flex items-center gap-4 p-5">
               <div className="rounded-full bg-primary/10 p-3">
-                <Plus className="h-6 w-6 text-primary" />
+                <Plus className="h-5 w-5 text-primary" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <h3 className="font-semibold">일기 쓰기</h3>
-                <p className="text-sm text-muted-foreground">오늘의 이야기를 기록하세요</p>
+                <p className="text-xs text-muted-foreground truncate">오늘의 이야기</p>
               </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             </CardContent>
           </Card>
         </Link>
@@ -81,17 +107,17 @@ export default function HomePage() {
         {/* My Diaries */}
         <Link to="/diaries">
           <Card className="cursor-pointer transition-shadow hover:shadow-md">
-            <CardContent className="flex items-center gap-4 p-6">
+            <CardContent className="flex items-center gap-4 p-5">
               <div className="rounded-full bg-blue-500/10 p-3">
-                <BookOpen className="h-6 w-6 text-blue-500" />
+                <BookOpen className="h-5 w-5 text-blue-500" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <h3 className="font-semibold">내 일기</h3>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs text-muted-foreground truncate">
                   {diaryCount?.count || 0}개의 일기
                 </p>
               </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             </CardContent>
           </Card>
         </Link>
@@ -99,15 +125,15 @@ export default function HomePage() {
         {/* Friends */}
         <Link to="/friends">
           <Card className="cursor-pointer transition-shadow hover:shadow-md">
-            <CardContent className="flex items-center gap-4 p-6">
+            <CardContent className="flex items-center gap-4 p-5">
               <div className="rounded-full bg-green-500/10 p-3">
-                <Users className="h-6 w-6 text-green-500" />
+                <Users className="h-5 w-5 text-green-500" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <h3 className="font-semibold">친구</h3>
-                <p className="text-sm text-muted-foreground">친구와 소통하세요</p>
+                <p className="text-xs text-muted-foreground truncate">친구와 소통</p>
               </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             </CardContent>
           </Card>
         </Link>
@@ -115,15 +141,15 @@ export default function HomePage() {
         {/* Mental Care */}
         <Link to="/mental">
           <Card className="cursor-pointer transition-shadow hover:shadow-md">
-            <CardContent className="flex items-center gap-4 p-6">
+            <CardContent className="flex items-center gap-4 p-5">
               <div className="rounded-full bg-indigo-500/10 p-3">
-                <Brain className="h-6 w-6 text-indigo-500" />
+                <Brain className="h-5 w-5 text-indigo-500" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <h3 className="font-semibold">심리 케어</h3>
-                <p className="text-sm text-muted-foreground">마음 상태 확인하기</p>
+                <p className="text-xs text-muted-foreground truncate">마음 상태 확인</p>
               </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             </CardContent>
           </Card>
         </Link>
