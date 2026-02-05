@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { BookOpen, ArrowLeft } from 'lucide-react'
+import { BookOpen, ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { mentalService } from '@/services/mentalService'
@@ -29,14 +29,18 @@ export default function BookRecommendationPage() {
 
   return (
     <div className="space-y-6">
-      {/* 헤더 */}
-      <div className="flex items-center gap-4">
-        <Link to="/mental">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            뒤로
-          </Button>
-        </Link>
+      {/* 브레드크럼 */}
+      <div className="space-y-2">
+        <nav className="flex items-center gap-2 text-sm">
+          <Link
+            to="/mental"
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            심리 케어
+          </Link>
+          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          <span className="font-medium text-foreground">책 추천</span>
+        </nav>
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <BookOpen className="w-7 h-7 text-pink-500" />
