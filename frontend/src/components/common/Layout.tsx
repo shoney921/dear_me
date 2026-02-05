@@ -12,7 +12,7 @@ export default function Layout() {
       <div className="min-h-screen bg-white/70 backdrop-blur-sm">
         <MobileHeader />
         <Header />
-        <main className="container mx-auto px-4 py-6 pb-24 sm:pb-6">
+        <main className="max-w-5xl mx-auto px-4 py-6 pb-24 sm:pb-6">
           <Outlet />
         </main>
       </div>
