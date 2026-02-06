@@ -95,6 +95,9 @@ function translateErrorDetail(detail: string | Array<{ msg: string }> | undefine
     'Subscription not found': '구독 정보를 찾을 수 없습니다.',
     'Cannot cancel free plan': '무료 플랜은 취소할 수 없습니다.',
     'Premium subscription required for this feature': '이 기능은 프리미엄 구독이 필요합니다.',
+    'Subscription already cancelled': '이미 취소된 구독입니다.',
+    'Subscription already expired': '이미 만료된 구독입니다.',
+    'Invalid subscription period': '유효하지 않은 구독 기간입니다.',
   }
 
   return translations[detail] || detail

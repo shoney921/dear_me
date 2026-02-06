@@ -35,10 +35,23 @@ class SubscriptionResponse(SubscriptionBase):
 
 
 class SubscriptionStatusResponse(BaseModel):
-    """구독 상태 간단 응답"""
+    """구독 상태 응답"""
     is_premium: bool
     plan: SubscriptionPlan
+    status: SubscriptionStatus
     expires_at: Optional[datetime] = None
+    cancelled_at: Optional[datetime] = None
+    days_remaining: Optional[int] = None
+    is_in_grace_period: bool = False
+
+
+class UpgradeRequest(BaseModel):
+    """업그레이드 요청"""
+    period_days: int = 30
+
+    @property
+    def is_valid_period(self) -> bool:
+        return self.period_days in (30, 365)
 
 
 class PremiumPlanInfo(BaseModel):

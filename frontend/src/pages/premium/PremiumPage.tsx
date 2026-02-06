@@ -1,16 +1,18 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Crown, Check, Sparkles, MessageCircle, Users, Lock } from 'lucide-react'
+import { Crown, Check, Sparkles, MessageCircle, Users, Lock, AlertCircle } from 'lucide-react'
 
 import { subscriptionService } from '@/services/subscriptionService'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { PageLoading, Loading } from '@/components/ui/Loading'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { getApiErrorMessage } from '@/lib/error'
 
 export default function PremiumPage() {
   const queryClient = useQueryClient()
   const [error, setError] = useState('')
+  const [showCancelDialog, setShowCancelDialog] = useState(false)
 
   const { data: status, isLoading: isLoadingStatus } = useQuery({
     queryKey: ['subscriptionStatus'],
@@ -27,14 +29,16 @@ export default function PremiumPage() {
     queryFn: subscriptionService.getPlans,
   })
 
+  const invalidateAll = () => {
+    setError('')
+    queryClient.invalidateQueries({ queryKey: ['subscriptionStatus'] })
+    queryClient.invalidateQueries({ queryKey: ['usageStatus'] })
+    queryClient.invalidateQueries({ queryKey: ['mySubscription'] })
+  }
+
   const upgradeMutation = useMutation({
-    mutationFn: subscriptionService.upgrade,
-    onSuccess: () => {
-      setError('')
-      queryClient.invalidateQueries({ queryKey: ['subscriptionStatus'] })
-      queryClient.invalidateQueries({ queryKey: ['usageStatus'] })
-      queryClient.invalidateQueries({ queryKey: ['mySubscription'] })
-    },
+    mutationFn: (periodDays: number) => subscriptionService.upgrade(periodDays),
+    onSuccess: invalidateAll,
     onError: (err) => {
       setError(getApiErrorMessage(err))
     },
@@ -43,13 +47,12 @@ export default function PremiumPage() {
   const cancelMutation = useMutation({
     mutationFn: subscriptionService.cancel,
     onSuccess: () => {
-      setError('')
-      queryClient.invalidateQueries({ queryKey: ['subscriptionStatus'] })
-      queryClient.invalidateQueries({ queryKey: ['usageStatus'] })
-      queryClient.invalidateQueries({ queryKey: ['mySubscription'] })
+      invalidateAll()
+      setShowCancelDialog(false)
     },
     onError: (err) => {
       setError(getApiErrorMessage(err))
+      setShowCancelDialog(false)
     },
   })
 
@@ -58,43 +61,97 @@ export default function PremiumPage() {
   }
 
   const isPremium = status?.is_premium
+  const isGracePeriod = status?.is_in_grace_period
+  const isActiveSubscription = isPremium && !isGracePeriod
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return ''
+    return new Date(dateStr).toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+  }
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       {/* 현재 구독 상태 */}
-      <Card className={isPremium ? 'border-yellow-500 bg-yellow-50/50' : ''}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Crown className={`h-5 w-5 ${isPremium ? 'text-yellow-500' : 'text-muted-foreground'}`} />
-            {isPremium ? '프리미엄 구독 중' : '무료 플랜'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isPremium ? (
+      {isActiveSubscription && (
+        <Card className="border-yellow-500 bg-yellow-50/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Crown className="h-5 w-5 text-yellow-500" />
+              프리미엄 구독 중
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             <div className="space-y-4">
               <p className="text-muted-foreground">
                 프리미엄 멤버십을 이용 중입니다. 모든 기능을 자유롭게 사용하세요!
               </p>
               {status?.expires_at && (
-                <p className="text-sm text-muted-foreground">
-                  만료일: {new Date(status.expires_at).toLocaleDateString('ko-KR')}
-                </p>
+                <div className="space-y-1 text-sm text-muted-foreground">
+                  <p>만료일: {formatDate(status.expires_at)}</p>
+                  {status.days_remaining != null && (
+                    <p>남은 기간: {status.days_remaining}일</p>
+                  )}
+                </div>
               )}
               <Button
                 variant="outline"
-                onClick={() => cancelMutation.mutate()}
-                disabled={cancelMutation.isPending}
+                onClick={() => setShowCancelDialog(true)}
               >
-                {cancelMutation.isPending ? '처리 중...' : '구독 취소'}
+                구독 취소
               </Button>
             </div>
-          ) : (
+          </CardContent>
+        </Card>
+      )}
+
+      {isGracePeriod && (
+        <Card className="border-orange-400 bg-orange-50/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-orange-500" />
+              구독이 취소되었습니다
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-muted-foreground">
+                구독이 취소되었지만, 만료일까지 프리미엄 기능을 계속 이용할 수 있습니다.
+              </p>
+              <div className="space-y-1 text-sm text-muted-foreground">
+                {status?.expires_at && (
+                  <p>만료일: {formatDate(status.expires_at)}</p>
+                )}
+                {status?.days_remaining != null && (
+                  <p>남은 기간: <span className="font-semibold text-orange-600">{status.days_remaining}일</span></p>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                만료 후에는 무료 플랜으로 전환됩니다. 아래에서 다시 구독할 수 있습니다.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!isPremium && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Crown className="h-5 w-5 text-muted-foreground" />
+              무료 플랜
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             <p className="text-muted-foreground">
               프리미엄으로 업그레이드하면 더 많은 기능을 사용할 수 있습니다.
             </p>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* 사용량 현황 (무료 사용자만) */}
       {!isPremium && usageStatus && (
@@ -173,13 +230,13 @@ export default function PremiumPage() {
         </div>
       )}
 
-      {/* 플랜 목록 */}
-      {!isPremium && plans && (
+      {/* 플랜 목록 (무료 또는 grace period 상태에서 표시) */}
+      {(!isPremium || isGracePeriod) && plans && (
         <div className="grid gap-4 md:grid-cols-2">
           {plans.map((plan, index) => (
             <Card
               key={index}
-              className={index === 0 ? 'border-primary' : ''}
+              className={`flex flex-col ${index === 0 ? 'border-primary' : ''}`}
             >
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
@@ -199,7 +256,7 @@ export default function PremiumPage() {
                   )}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="flex flex-1 flex-col space-y-4">
                 <div>
                   <span className="text-3xl font-bold">
                     {plan.price.toLocaleString()}
@@ -210,7 +267,7 @@ export default function PremiumPage() {
                   </span>
                 </div>
 
-                <ul className="space-y-2">
+                <ul className="flex-1 space-y-2">
                   {plan.features.map((feature, i) => (
                     <li key={i} className="flex items-center gap-2 text-sm">
                       <Check className="h-4 w-4 text-green-500" />
@@ -222,7 +279,7 @@ export default function PremiumPage() {
                 <Button
                   className="w-full"
                   variant={index === 0 ? 'default' : 'outline'}
-                  onClick={() => upgradeMutation.mutate()}
+                  onClick={() => upgradeMutation.mutate(plan.period_days)}
                   disabled={upgradeMutation.isPending}
                 >
                   {upgradeMutation.isPending ? (
@@ -230,6 +287,8 @@ export default function PremiumPage() {
                       <Loading size="sm" className="mr-2" />
                       처리 중...
                     </>
+                  ) : isGracePeriod ? (
+                    '다시 구독하기'
                   ) : (
                     '업그레이드'
                   )}
@@ -274,6 +333,23 @@ export default function PremiumPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* 구독 취소 확인 다이얼로그 */}
+      <ConfirmDialog
+        isOpen={showCancelDialog}
+        onClose={() => setShowCancelDialog(false)}
+        onConfirm={() => cancelMutation.mutate()}
+        title="구독을 취소하시겠어요?"
+        description={
+          status?.expires_at
+            ? `취소하시더라도 ${formatDate(status.expires_at)}까지 프리미엄 기능을 계속 이용할 수 있습니다. 이후 무료 플랜으로 전환됩니다.`
+            : '구독을 취소하면 프리미엄 기능을 이용할 수 없게 됩니다.'
+        }
+        confirmText="구독 취소"
+        cancelText="유지하기"
+        variant="destructive"
+        isLoading={cancelMutation.isPending}
+      />
     </div>
   )
 }

@@ -4,6 +4,7 @@ import type {
   SubscriptionStatusResponse,
   PremiumPlanInfo,
   UsageStatusResponse,
+  UpgradeRequest,
 } from '@/types/subscription'
 
 export const subscriptionService = {
@@ -22,8 +23,10 @@ export const subscriptionService = {
     return response.data
   },
 
-  async upgrade(): Promise<Subscription> {
-    const response = await api.post<Subscription>('/subscriptions/upgrade')
+  async upgrade(periodDays: number = 30): Promise<Subscription> {
+    const response = await api.post<Subscription>('/subscriptions/upgrade', {
+      period_days: periodDays,
+    } satisfies UpgradeRequest)
     return response.data
   },
 

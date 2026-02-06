@@ -11,6 +11,7 @@ from app.schemas.subscription import (
     SubscriptionStatusResponse,
     PremiumPlanInfo,
     UsageStatusResponse,
+    UpgradeRequest,
 )
 from app.services.subscription_service import SubscriptionService
 from app.constants.subscription import PREMIUM_FEATURES
@@ -47,29 +48,10 @@ def get_subscription_status(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """구독 상태 간단 조회"""
-    subscription = db.query(Subscription).filter(
-        Subscription.user_id == current_user.id
-    ).first()
-
-    if not subscription:
-        return SubscriptionStatusResponse(
-            is_premium=False,
-            plan=SubscriptionPlan.FREE,
-            expires_at=None,
-        )
-
-    is_premium = (
-        subscription.plan == SubscriptionPlan.PREMIUM
-        and subscription.status == SubscriptionStatus.ACTIVE
-        and (subscription.expires_at is None or subscription.expires_at > datetime.utcnow())
-    )
-
-    return SubscriptionStatusResponse(
-        is_premium=is_premium,
-        plan=subscription.plan,
-        expires_at=subscription.expires_at,
-    )
+    """구독 상태 조회"""
+    subscription_service = SubscriptionService(db)
+    detail = subscription_service.get_subscription_detail(current_user)
+    return SubscriptionStatusResponse(**detail)
 
 
 @router.get("/plans", response_model=list[PremiumPlanInfo])
@@ -105,28 +87,47 @@ def get_usage_status(
 
 @router.post("/upgrade", response_model=SubscriptionResponse)
 def upgrade_to_premium(
+    body: UpgradeRequest = UpgradeRequest(),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """프리미엄으로 업그레이드 (테스트용 - 실제 결제 연동 전)"""
+    if not body.is_valid_period:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid subscription period",
+        )
+
     subscription = db.query(Subscription).filter(
         Subscription.user_id == current_user.id
     ).first()
+
+    now = datetime.utcnow()
 
     if not subscription:
         subscription = Subscription(
             user_id=current_user.id,
             plan=SubscriptionPlan.PREMIUM,
             status=SubscriptionStatus.ACTIVE,
-            started_at=datetime.utcnow(),
-            expires_at=datetime.utcnow() + timedelta(days=30),
+            started_at=now,
+            expires_at=now + timedelta(days=body.period_days),
         )
         db.add(subscription)
     else:
+        # grace period 중 재구독: 남은 기간에 새 기간 합산
+        if (
+            subscription.status == SubscriptionStatus.CANCELLED
+            and subscription.expires_at
+            and subscription.expires_at > now
+        ):
+            subscription.expires_at = subscription.expires_at + timedelta(days=body.period_days)
+        else:
+            subscription.started_at = now
+            subscription.expires_at = now + timedelta(days=body.period_days)
+
         subscription.plan = SubscriptionPlan.PREMIUM
         subscription.status = SubscriptionStatus.ACTIVE
-        subscription.started_at = datetime.utcnow()
-        subscription.expires_at = datetime.utcnow() + timedelta(days=30)
+        subscription.cancelled_at = None
 
     db.commit()
     db.refresh(subscription)
@@ -139,7 +140,7 @@ def cancel_subscription(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """구독 취소"""
+    """구독 취소 (만료일까지 프리미엄 유지)"""
     subscription = db.query(Subscription).filter(
         Subscription.user_id == current_user.id
     ).first()
@@ -156,6 +157,19 @@ def cancel_subscription(
             detail="Cannot cancel free plan",
         )
 
+    if subscription.status == SubscriptionStatus.CANCELLED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Subscription already cancelled",
+        )
+
+    if subscription.status == SubscriptionStatus.EXPIRED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Subscription already expired",
+        )
+
+    # plan과 expires_at은 유지 (grace period)
     subscription.status = SubscriptionStatus.CANCELLED
     subscription.cancelled_at = datetime.utcnow()
 

@@ -64,7 +64,7 @@ def check_premium_subscription(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ) -> bool:
-    """프리미엄 구독 여부 확인 (의존성)"""
+    """프리미엄 구독 여부 확인 (의존성) - grace period 포함"""
     subscription = db.query(Subscription).filter(
         Subscription.user_id == current_user.id
     ).first()
@@ -72,13 +72,19 @@ def check_premium_subscription(
     if not subscription:
         return False
 
-    is_premium = (
-        subscription.plan == SubscriptionPlan.PREMIUM
-        and subscription.status == SubscriptionStatus.ACTIVE
-        and (subscription.expires_at is None or subscription.expires_at > datetime.utcnow())
-    )
+    if subscription.plan != SubscriptionPlan.PREMIUM:
+        return False
 
-    return is_premium
+    # 만료일 체크
+    if subscription.expires_at and subscription.expires_at <= datetime.utcnow():
+        # 만료됨 → 자동으로 EXPIRED 전환
+        subscription.status = SubscriptionStatus.EXPIRED
+        subscription.plan = SubscriptionPlan.FREE
+        db.commit()
+        return False
+
+    # ACTIVE 또는 CANCELLED(grace period)이면 프리미엄 유지
+    return subscription.status in (SubscriptionStatus.ACTIVE, SubscriptionStatus.CANCELLED)
 
 
 def require_premium(

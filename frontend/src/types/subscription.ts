@@ -15,7 +15,15 @@ export interface Subscription {
 export interface SubscriptionStatusResponse {
   is_premium: boolean
   plan: SubscriptionPlan
+  status: SubscriptionStatus
   expires_at?: string
+  cancelled_at?: string
+  days_remaining?: number
+  is_in_grace_period: boolean
+}
+
+export interface UpgradeRequest {
+  period_days: number
 }
 
 export interface PremiumPlanInfo {

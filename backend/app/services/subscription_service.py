@@ -16,7 +16,7 @@ class SubscriptionService:
         self.db = db
 
     def is_premium(self, user: User) -> bool:
-        """사용자가 프리미엄인지 확인"""
+        """사용자가 프리미엄인지 확인 (grace period 포함)"""
         subscription = self.db.query(Subscription).filter(
             Subscription.user_id == user.id
         ).first()
@@ -24,11 +24,60 @@ class SubscriptionService:
         if not subscription:
             return False
 
-        return (
-            subscription.plan == SubscriptionPlan.PREMIUM
-            and subscription.status == SubscriptionStatus.ACTIVE
-            and (subscription.expires_at is None or subscription.expires_at > datetime.utcnow())
+        if subscription.plan != SubscriptionPlan.PREMIUM:
+            return False
+
+        # 만료일 체크
+        if subscription.expires_at and subscription.expires_at <= datetime.utcnow():
+            # 만료됨 → 자동으로 EXPIRED 전환
+            subscription.status = SubscriptionStatus.EXPIRED
+            subscription.plan = SubscriptionPlan.FREE
+            self.db.commit()
+            return False
+
+        # ACTIVE 또는 CANCELLED(grace period)이면 프리미엄 유지
+        return subscription.status in (SubscriptionStatus.ACTIVE, SubscriptionStatus.CANCELLED)
+
+    def get_subscription_detail(self, user: User) -> dict:
+        """구독 상세 정보 조회 (status 엔드포인트용)"""
+        subscription = self.db.query(Subscription).filter(
+            Subscription.user_id == user.id
+        ).first()
+
+        if not subscription:
+            return {
+                "is_premium": False,
+                "plan": SubscriptionPlan.FREE,
+                "status": SubscriptionStatus.ACTIVE,
+                "expires_at": None,
+                "cancelled_at": None,
+                "days_remaining": None,
+                "is_in_grace_period": False,
+            }
+
+        is_premium = self.is_premium(user)
+        # is_premium 호출 후 subscription을 다시 읽어야 자동 만료 반영됨
+        self.db.refresh(subscription)
+
+        days_remaining = None
+        if subscription.expires_at and subscription.expires_at > datetime.utcnow():
+            delta = subscription.expires_at - datetime.utcnow()
+            days_remaining = delta.days
+
+        is_in_grace_period = (
+            subscription.status == SubscriptionStatus.CANCELLED
+            and is_premium
         )
+
+        return {
+            "is_premium": is_premium,
+            "plan": subscription.plan,
+            "status": subscription.status,
+            "expires_at": subscription.expires_at,
+            "cancelled_at": subscription.cancelled_at,
+            "days_remaining": days_remaining,
+            "is_in_grace_period": is_in_grace_period,
+        }
 
     def get_plan_limits(self, user: User) -> dict:
         """사용자의 플랜 제한 조회"""
