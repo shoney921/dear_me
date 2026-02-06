@@ -48,14 +48,14 @@
 ## 디렉토리 구조
 
 ```
-02.DEAR_ME/
+dear-me/
 ├── backend/
 │   └── app/
-│       ├── api/api_v1/endpoints/   # API 엔드포인트 (auth, diary, persona, friend, chat, user)
+│       ├── api/api_v1/endpoints/   # API 엔드포인트 (auth, diary, persona, friend, chat, user, quiz, notification, mental, subscription)
 │       ├── core/                    # 설정, DB, 보안, 의존성
 │       ├── models/                  # SQLAlchemy 모델
 │       ├── schemas/                 # Pydantic 스키마
-│       ├── services/                # 비즈니스 로직 (persona_service, chat_service, embedding_service)
+│       ├── services/                # 비즈니스 로직 (persona_service, chat_service, embedding_service, mental_service, subscription_service, email_service, milestone_service)
 │       └── constants/               # 상수 (moods, weather, prompts)
 ├── frontend/
 │   └── src/
@@ -105,6 +105,8 @@
 | GET | `/api/v1/diaries/count` | 일기 개수 조회 |
 | GET | `/api/v1/diaries/stats` | 일기 통계 조회 |
 | GET | `/api/v1/diaries/prompt-suggestions` | AI 일기 주제 제안 |
+| GET | `/api/v1/diaries/calendar` | 월별 일기 캘린더 데이터 |
+| GET | `/api/v1/diaries/weekly-insight` | 주간 인사이트 조회 |
 
 ### 페르소나 (Persona)
 | Method | Endpoint | 설명 |
@@ -136,6 +138,7 @@
 | GET | `/api/v1/chats/{id}/messages` | 채팅 메시지 조회 |
 | POST | `/api/v1/chats/{id}/messages` | 메시지 전송 |
 | DELETE | `/api/v1/chats/{id}` | 채팅 삭제 |
+| POST | `/api/v1/chats/{id}/messages/stream` | 스트리밍 메시지 전송 |
 
 ### 알림 (Notification)
 | Method | Endpoint | 설명 |
@@ -158,6 +161,22 @@
 | GET | `/api/v1/mental/reports/monthly` | 월간 리포트 |
 | POST | `/api/v1/mental/feedback` | 피드백 생성 |
 | GET | `/api/v1/mental/book-recommendations` | 책 추천 조회 |
+
+### 구독 (Subscription)
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/api/v1/subscriptions/me` | 내 구독 정보 조회 |
+| GET | `/api/v1/subscriptions/status` | 구독 상태 조회 |
+| GET | `/api/v1/subscriptions/plans` | 이용 가능한 플랜 목록 |
+| GET | `/api/v1/subscriptions/usage` | 사용량 현황 조회 |
+| POST | `/api/v1/subscriptions/upgrade` | 프리미엄 업그레이드 |
+| POST | `/api/v1/subscriptions/cancel` | 구독 취소 |
+
+### 퀴즈 (Quiz)
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/api/v1/quiz/questions` | 성격 퀴즈 질문 목록 |
+| POST | `/api/v1/quiz/submit` | 퀴즈 제출 및 임시 페르소나 생성 |
 
 ---
 
@@ -612,7 +631,7 @@ raise HTTPException(status_code=400, detail="Error message")
 1. **일기 프라이버시**: 친구의 일기 내용은 절대 직접 노출하지 않음. 페르소나를 통해서만 간접 소통
 2. **페르소나 생성 조건**: 최소 7개 이상의 일기 필요
 3. **친구 관계 확인**: 친구 페르소나 조회/대화 시 반드시 친구 관계 확인
-4. **LLM 프롬프트**: `docs/AI_PROMPTS.md` 참조하여 일관된 페르소나 성격 유지
+4. **LLM 프롬프트**: `docs/core/AI_PROMPTS.md` 참조하여 일관된 페르소나 성격 유지
 5. **타입 안정성**: TypeScript strict 모드 사용, any 타입 지양
 6. **에러 처리**: 모든 API 호출에 에러 처리 필수, 사용자에게 한국어로 메시지 표시
 7. **Zustand Hydration**: persist 미들웨어 사용 시 `isHydrated` 상태 확인 후 라우팅
