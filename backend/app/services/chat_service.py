@@ -252,11 +252,13 @@ class ChatService:
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": f"You are {persona.name}. Respond in Korean."},
+                    {"role": "system", "content": f"You are {persona.name}. Respond in Korean like chatting with a close friend."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.8,
-                max_tokens=300,
+                temperature=0.85,
+                max_tokens=200,
+                presence_penalty=0.3,
+                frequency_penalty=0.2,
             )
 
             return response.choices[0].message.content
@@ -361,11 +363,13 @@ class ChatService:
             stream = await client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": f"You are {persona.name}. Respond in Korean."},
+                    {"role": "system", "content": f"You are {persona.name}. Respond in Korean like chatting with a close friend."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.8,
-                max_tokens=300,
+                temperature=0.85,
+                max_tokens=200,
+                presence_penalty=0.3,
+                frequency_penalty=0.2,
                 stream=True,
             )
 

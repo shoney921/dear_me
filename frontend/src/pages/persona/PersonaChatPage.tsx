@@ -226,14 +226,17 @@ export default function PersonaChatPage() {
               <div className="flex justify-start">
                 <div className="max-w-[80%] rounded-lg bg-secondary px-4 py-2">
                   <p className="whitespace-pre-wrap">{streamingMessage}</p>
-                  <span className="animate-pulse">▊</span>
                 </div>
               </div>
             )}
             {isStreaming && !streamingMessage && (
               <div className="flex justify-start">
                 <div className="max-w-[80%] rounded-lg bg-secondary px-4 py-2">
-                  <p className="text-muted-foreground">페르소나가 생각하는 중...</p>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </span>
                 </div>
               </div>
             )}
