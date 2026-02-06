@@ -149,12 +149,12 @@ def resend_verification(
     if not user or user.email_verified:
         return success_message
 
-    # Rate limit: 5분 이내 재요청 차단
+    # Rate limit: 1분 이내 재요청 차단
     if user.verification_token_expires_at:
         token_created_at = user.verification_token_expires_at - timedelta(
             hours=settings.VERIFICATION_TOKEN_EXPIRE_HOURS
         )
-        if datetime.utcnow() - token_created_at < timedelta(minutes=5):
+        if datetime.utcnow() - token_created_at < timedelta(minutes=1):
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="Please wait before requesting another verification email",

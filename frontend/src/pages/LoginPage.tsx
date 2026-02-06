@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -34,11 +34,33 @@ export default function LoginPage() {
   const [touched, setTouched] = useState<Record<string, boolean>>({})
   const [showVerificationBanner, setShowVerificationBanner] = useState(verificationSent)
   const [bannerEmail, setBannerEmail] = useState(registeredEmail || '')
+  const [cooldown, setCooldown] = useState(verificationSent ? 60 : 0)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const startCooldown = useCallback(() => {
+    setCooldown(60)
+    if (timerRef.current) clearInterval(timerRef.current)
+    timerRef.current = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          if (timerRef.current) clearInterval(timerRef.current)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }, [])
+
+  useEffect(() => {
+    if (verificationSent) startCooldown()
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }
+  }, [verificationSent, startCooldown])
 
   const resendMutation = useMutation({
     mutationFn: () => authService.resendVerification({ email: bannerEmail }),
     onSuccess: () => {
       toast.success('인증 이메일이 재발송되었습니다. 이메일을 확인해주세요.')
+      startCooldown()
     },
     onError: (err) => {
       toast.error(getApiErrorMessage(err))
@@ -171,10 +193,14 @@ export default function LoginPage() {
               type="button"
               variant="outline"
               size="sm"
-              disabled={resendMutation.isPending}
+              disabled={resendMutation.isPending || cooldown > 0}
               onClick={() => resendMutation.mutate()}
             >
-              {resendMutation.isPending ? '발송 중...' : '인증 메일 재발송'}
+              {resendMutation.isPending
+                ? '발송 중...'
+                : cooldown > 0
+                  ? `재발송 (${cooldown}초)`
+                  : '인증 메일 재발송'}
             </Button>
           </div>
         )}
