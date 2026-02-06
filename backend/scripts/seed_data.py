@@ -82,6 +82,7 @@ def create_users(db: Session) -> list[User]:
             hashed_password=hashed_password,
             profile_image=user_data["profile_image"],
             is_active=True,
+            email_verified=True,
         )
         db.add(user)
         users.append(user)
