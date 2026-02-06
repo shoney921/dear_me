@@ -1,12 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { useState, useCallback, useRef, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { isAxiosError } from 'axios'
 
 import { useAuthStore } from '@/store/authStore'
 import { authService } from '@/services/authService'
-import { personaService } from '@/services/personaService'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card'
@@ -20,21 +19,15 @@ interface FieldErrors {
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const location = useLocation()
   const { setAuth } = useAuthStore()
 
-  // Check if user just registered
-  const isNewUser = location.state?.newUser === true
-  const verificationSent = location.state?.verificationSent === true
-  const registeredEmail = location.state?.email as string | undefined
-
-  const [email, setEmail] = useState(registeredEmail || '')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [touched, setTouched] = useState<Record<string, boolean>>({})
-  const [showVerificationBanner, setShowVerificationBanner] = useState(verificationSent)
-  const [bannerEmail, setBannerEmail] = useState(registeredEmail || '')
-  const [cooldown, setCooldown] = useState(verificationSent ? 60 : 0)
+  const [showVerificationBanner, setShowVerificationBanner] = useState(false)
+  const [bannerEmail, setBannerEmail] = useState('')
+  const [cooldown, setCooldown] = useState(0)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const startCooldown = useCallback(() => {
@@ -52,9 +45,8 @@ export default function LoginPage() {
   }, [])
 
   useEffect(() => {
-    if (verificationSent) startCooldown()
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
-  }, [verificationSent, startCooldown])
+  }, [])
 
   const resendMutation = useMutation({
     mutationFn: () => authService.resendVerification({ email: bannerEmail }),
@@ -75,22 +67,6 @@ export default function LoginPage() {
         const user = await authService.getMe()
         setAuth(user, data.access_token)
         toast.success('로그인되었습니다.')
-
-        // Check if user has persona - if new user without persona, redirect to quiz
-        try {
-          const personaStatus = await personaService.getStatus()
-          if (!personaStatus.has_persona && isNewUser) {
-            navigate('/quiz', { replace: true })
-            return
-          }
-        } catch {
-          // If persona status check fails, still redirect new users to quiz
-          if (isNewUser) {
-            navigate('/quiz', { replace: true })
-            return
-          }
-        }
-
         navigate('/', { replace: true })
       } catch {
         toast.error('사용자 정보를 불러오는데 실패했습니다. 다시 로그인해주세요.')

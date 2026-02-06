@@ -4,13 +4,13 @@ from datetime import date, timedelta
 from typing import Optional
 from collections import defaultdict
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from app.core.deps import get_db, get_current_active_user
 from app.core.config import settings
 from app.core.business_logger import biz_log
+from app.core.background import process_diary_embedding, process_diary_mental_analysis
 from app.models.diary import Diary
 from app.models.user import User
 from app.schemas.diary import (
@@ -19,8 +19,6 @@ from app.schemas.diary import (
 )
 from app.constants.prompts import DIARY_PROMPT_SUGGESTION
 from app.services.milestone_service import MilestoneService
-from app.services.mental_service import MentalService
-from app.services.embedding_service import EmbeddingService
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +28,7 @@ router = APIRouter()
 @router.post("", response_model=DiaryResponse, status_code=status.HTTP_201_CREATED)
 async def create_diary(
     diary_in: DiaryCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -80,26 +79,9 @@ async def create_diary(
     milestone_service = MilestoneService(db)
     milestone_service.check_milestones(current_user)
 
-    # RAG용 임베딩 생성 (비동기 백그라운드 처리)
-    try:
-        EmbeddingService.create_or_update_diary_embedding(db, diary)
-        logger.info(f"Embedding created for diary {diary.id}")
-    except Exception as e:
-        logger.warning(f"Embedding creation failed for diary {diary.id}: {e}")
-
-    # 멘탈 분석 + 피드백 자동 생성 (일기 작성 시 미리 처리)
-    try:
-        mental_service = MentalService(db)
-        analysis = await mental_service.analyze_diary(current_user, diary)
-
-        # 피드백도 함께 생성하여 저장
-        feedback = await mental_service.generate_feedback(analysis)
-        analysis.feedback_json = json.dumps(feedback, ensure_ascii=False)
-        db.commit()
-
-        logger.info(f"Mental analysis and feedback completed for diary {diary.id}")
-    except Exception as e:
-        logger.warning(f"Mental analysis failed for diary {diary.id}: {e}")
+    # 임베딩 + 멘탈 분석을 백그라운드로 처리 (응답 지연 방지)
+    background_tasks.add_task(process_diary_embedding, diary.id)
+    background_tasks.add_task(process_diary_mental_analysis, current_user.id, diary.id)
 
     return diary
 
@@ -503,6 +485,7 @@ def get_diary(
 async def update_diary(
     diary_id: int,
     diary_update: DiaryUpdate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -527,25 +510,9 @@ async def update_diary(
 
     biz_log.diary_update(current_user.username, diary_id)
 
-    # RAG용 임베딩 업데이트
-    try:
-        EmbeddingService.create_or_update_diary_embedding(db, diary)
-        logger.info(f"Embedding updated for diary {diary.id}")
-    except Exception as e:
-        logger.warning(f"Embedding update failed for diary {diary.id}: {e}")
-
-    # 일기 수정 시 멘탈 분석 재실행
-    try:
-        from app.models.mental_analysis import MentalAnalysis
-        # 기존 분석 삭제
-        db.query(MentalAnalysis).filter(MentalAnalysis.diary_id == diary.id).delete()
-        db.commit()
-
-        mental_service = MentalService(db)
-        await mental_service.analyze_diary(current_user, diary)
-        logger.info(f"Mental analysis re-run for updated diary {diary.id}")
-    except Exception as e:
-        logger.warning(f"Mental analysis failed for updated diary {diary.id}: {e}")
+    # 임베딩 + 멘탈 분석을 백그라운드로 처리 (응답 지연 방지)
+    background_tasks.add_task(process_diary_embedding, diary.id)
+    background_tasks.add_task(process_diary_mental_analysis, current_user.id, diary.id, True)
 
     return diary
 

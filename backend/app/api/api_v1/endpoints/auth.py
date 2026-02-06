@@ -18,6 +18,7 @@ from app.schemas.auth import (
     ResendVerificationRequest,
     ForgotPasswordRequest,
     ResetPasswordRequest,
+    VerifyEmailResponse,
 )
 from app.schemas.user import UserCreate
 from app.services.email_service import (
@@ -140,16 +141,24 @@ def login_json(request: Request, login_data: LoginRequest, db: Session = Depends
     return _create_token_response(user)
 
 
-@router.get("/verify-email")
+@router.get("/verify-email", response_model=VerifyEmailResponse)
 def verify_email(token: str, db: Session = Depends(get_db)):
-    """이메일 인증 토큰 검증"""
+    """이메일 인증 토큰 검증 + 자동 로그인 토큰 발급"""
     user = verify_token(token, db)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired verification token",
         )
-    return {"message": "이메일 인증이 완료되었습니다."}
+
+    biz_log.user_login(user.username)
+    token_data = _create_token_response(user)
+
+    return VerifyEmailResponse(
+        message="이메일 인증이 완료되었습니다.",
+        access_token=token_data["access_token"],
+        token_type=token_data["token_type"],
+    )
 
 
 @router.post("/resend-verification")

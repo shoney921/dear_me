@@ -8,6 +8,7 @@ import type {
   ResendVerificationRequest,
   ForgotPasswordRequest,
   ResetPasswordRequest,
+  VerifyEmailResponse,
 } from '@/types/auth'
 
 export const authService = {
@@ -26,8 +27,8 @@ export const authService = {
     return response.data
   },
 
-  async verifyEmail(token: string): Promise<{ message: string }> {
-    const response = await api.get<{ message: string }>(`/auth/verify-email?token=${token}`)
+  async verifyEmail(token: string): Promise<VerifyEmailResponse> {
+    const response = await api.get<VerifyEmailResponse>(`/auth/verify-email?token=${token}`)
     return response.data
   },
 

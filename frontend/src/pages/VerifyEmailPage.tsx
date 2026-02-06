@@ -1,16 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 
+import { useAuthStore } from '@/store/authStore'
 import { authService } from '@/services/authService'
+import { personaService } from '@/services/personaService'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card'
-import { Loader2, CheckCircle2, XCircle } from 'lucide-react'
+import { Loader2, XCircle } from 'lucide-react'
 
-type VerifyState = 'loading' | 'success' | 'error'
+type VerifyState = 'loading' | 'logging-in' | 'error'
 
 export default function VerifyEmailPage() {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const token = searchParams.get('token')
+  const { setAuth } = useAuthStore()
 
   const [state, setState] = useState<VerifyState>('loading')
   const [errorMessage, setErrorMessage] = useState('')
@@ -29,12 +33,31 @@ export default function VerifyEmailPage() {
 
     authService
       .verifyEmail(token)
-      .then(() => setState('success'))
+      .then(async (data) => {
+        setState('logging-in')
+
+        // 자동 로그인
+        localStorage.setItem('access_token', data.access_token)
+        const user = await authService.getMe()
+        setAuth(user, data.access_token)
+
+        // 페르소나 유무 확인 → 리다이렉트
+        try {
+          const personaStatus = await personaService.getStatus()
+          if (!personaStatus.has_persona) {
+            navigate('/quiz', { replace: true })
+          } else {
+            navigate('/', { replace: true })
+          }
+        } catch {
+          navigate('/quiz', { replace: true })
+        }
+      })
       .catch(() => {
         setState('error')
         setErrorMessage('인증 링크가 만료되었거나 유효하지 않습니다.')
       })
-  }, [token])
+  }, [token, navigate, setAuth])
 
   return (
     <div
@@ -52,20 +75,11 @@ export default function VerifyEmailPage() {
           </CardHeader>
 
           <CardContent className="flex flex-col items-center py-8">
-            {state === 'loading' && (
+            {(state === 'loading' || state === 'logging-in') && (
               <>
                 <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
-                <p className="text-muted-foreground">이메일 인증 중...</p>
-              </>
-            )}
-
-            {state === 'success' && (
-              <>
-                <CheckCircle2 className="h-12 w-12 text-green-500 mb-4" />
-                <p className="text-lg font-medium text-green-700 mb-2">인증 완료!</p>
-                <p className="text-muted-foreground text-center">
-                  이메일 인증이 성공적으로 완료되었습니다.<br />
-                  이제 로그인하여 DearMe를 시작하세요.
+                <p className="text-muted-foreground">
+                  {state === 'loading' ? '이메일 인증 중...' : '로그인 중...'}
                 </p>
               </>
             )}
@@ -80,7 +94,7 @@ export default function VerifyEmailPage() {
           </CardContent>
 
           <CardFooter className="flex justify-center">
-            {state !== 'loading' && (
+            {state === 'error' && (
               <Link to="/login" className="w-full">
                 <Button className="w-full">로그인하기</Button>
               </Link>

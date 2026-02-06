@@ -25,6 +25,7 @@ import ForgotPasswordPage from '@/pages/ForgotPasswordPage'
 import ResetPasswordPage from '@/pages/ResetPasswordPage'
 import PrivacyPolicyPage from '@/pages/legal/PrivacyPolicyPage'
 import TermsOfServicePage from '@/pages/legal/TermsOfServicePage'
+import PaymentPolicyPage from '@/pages/legal/PaymentPolicyPage'
 import { MentalDashboardPage, BookRecommendationPage, MentalReportPage } from '@/pages/mental'
 
 function App() {
@@ -67,6 +68,7 @@ function App() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/privacy" element={<PrivacyPolicyPage />} />
       <Route path="/terms" element={<TermsOfServicePage />} />
+      <Route path="/payment-policy" element={<PaymentPolicyPage />} />
 
       {/* Protected routes */}
       <Route element={<ProtectedRoute />}>

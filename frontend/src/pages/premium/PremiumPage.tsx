@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { Crown, Check, Sparkles, MessageCircle, Users, Lock, AlertCircle } from 'lucide-react'
 
 import { subscriptionService } from '@/services/subscriptionService'
@@ -333,6 +334,16 @@ export default function PremiumPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* 결제/환불 정책 링크 */}
+      <div className="text-center">
+        <Link
+          to="/payment-policy"
+          className="text-sm text-muted-foreground underline hover:text-foreground"
+        >
+          결제/환불 정책 보기
+        </Link>
+      </div>
 
       {/* 구독 취소 확인 다이얼로그 */}
       <ConfirmDialog

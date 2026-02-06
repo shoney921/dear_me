@@ -43,3 +43,9 @@ export interface ResetPasswordRequest {
   token: string
   password: string
 }
+
+export interface VerifyEmailResponse {
+  message: string
+  access_token: string
+  token_type: string
+}

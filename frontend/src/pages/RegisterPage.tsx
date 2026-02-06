@@ -1,7 +1,8 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { Mail } from 'lucide-react'
 
 import { authService } from '@/services/authService'
 import { Button } from '@/components/ui/Button'
@@ -18,8 +19,6 @@ interface FieldErrors {
 }
 
 export default function RegisterPage() {
-  const navigate = useNavigate()
-
   const [email, setEmail] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -27,14 +26,44 @@ export default function RegisterPage() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [touched, setTouched] = useState<Record<string, boolean>>({})
 
+  const [registrationComplete, setRegistrationComplete] = useState(false)
+  const [cooldown, setCooldown] = useState(0)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const startCooldown = useCallback(() => {
+    setCooldown(60)
+    if (timerRef.current) clearInterval(timerRef.current)
+    timerRef.current = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          if (timerRef.current) clearInterval(timerRef.current)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }, [])
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }
+  }, [])
+
+  const resendMutation = useMutation({
+    mutationFn: () => authService.resendVerification({ email }),
+    onSuccess: () => {
+      toast.success('인증 이메일이 재발송되었습니다.')
+      startCooldown()
+    },
+    onError: (err) => {
+      toast.error(getApiErrorMessage(err))
+    },
+  })
+
   const registerMutation = useMutation({
     mutationFn: authService.register,
-    onSuccess: (data) => {
-      toast.success(data.message)
-      navigate('/login', {
-        replace: true,
-        state: { newUser: true, verificationSent: true, email },
-      })
+    onSuccess: () => {
+      setRegistrationComplete(true)
+      startCooldown()
     },
     onError: (err) => {
       toast.error(getApiErrorMessage(err))
@@ -142,8 +171,58 @@ export default function RegisterPage() {
 
   const hasError = (field: string) => touched[field] && fieldErrors[field as keyof FieldErrors]
 
+  // 가입 완료 → 이메일 확인 안내 화면
+  if (registrationComplete) {
+    return (
+      <div
+        className="min-h-screen bg-cover bg-center bg-fixed"
+        style={{ backgroundImage: 'url(/dearme-background.png)' }}
+      >
+        <div className="flex min-h-screen items-center justify-center p-4 bg-white/60 backdrop-blur-sm">
+          <Card className="w-full max-w-md shadow-xl">
+            <CardHeader className="text-center">
+              <div className="flex justify-center mb-2">
+                <img src="/dearme-logo.png" alt="DearMe" className="h-16 w-16" />
+              </div>
+              <CardTitle className="text-2xl">이메일을 확인해주세요</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center py-8">
+              <Mail className="h-16 w-16 text-primary mb-6" />
+              <p className="text-center text-muted-foreground mb-2">
+                <strong>{email}</strong>으로
+              </p>
+              <p className="text-center text-muted-foreground mb-6">
+                인증 메일을 보냈습니다.<br />
+                메일의 인증 링크를 클릭하면 자동으로 로그인됩니다.
+              </p>
+              <Button
+                variant="outline"
+                disabled={resendMutation.isPending || cooldown > 0}
+                onClick={() => resendMutation.mutate()}
+              >
+                {resendMutation.isPending
+                  ? '발송 중...'
+                  : cooldown > 0
+                    ? `재발송 (${cooldown}초)`
+                    : '인증 메일 재발송'}
+              </Button>
+            </CardContent>
+            <CardFooter className="flex justify-center">
+              <p className="text-center text-sm text-muted-foreground">
+                이미 인증하셨나요?{' '}
+                <Link to="/login" className="text-primary hover:underline">
+                  로그인
+                </Link>
+              </p>
+            </CardFooter>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div 
+    <div
       className="min-h-screen bg-cover bg-center bg-fixed"
       style={{ backgroundImage: 'url(/dearme-background.png)' }}
     >

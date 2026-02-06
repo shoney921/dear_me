@@ -1,4 +1,6 @@
+import asyncio
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,11 +32,30 @@ def setup_logging():
 
 setup_logging()
 
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """서버 시작/종료 시 실행되는 이벤트"""
+    # Startup: 임베딩 모델 미리 로딩 (첫 요청 지연 방지)
+    try:
+        from app.services.embedding_service import EmbeddingService
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, EmbeddingService.get_model)
+        logger.info("Embedding model pre-loaded at startup")
+    except Exception as e:
+        logger.warning(f"Failed to pre-load embedding model: {e}")
+
+    yield
+
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description="일기 기반 AI 페르소나 서비스",
     version="0.1.0",
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    lifespan=lifespan,
 )
 
 # Rate Limiting
