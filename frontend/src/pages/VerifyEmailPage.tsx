@@ -81,9 +81,9 @@ export default function VerifyEmailPage() {
 
           <CardFooter className="flex justify-center">
             {state !== 'loading' && (
-              <Button asChild className="w-full">
-                <Link to="/login">로그인하기</Link>
-              </Button>
+              <Link to="/login" className="w-full">
+                <Button className="w-full">로그인하기</Button>
+              </Link>
             )}
           </CardFooter>
         </Card>
