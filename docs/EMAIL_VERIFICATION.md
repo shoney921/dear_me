@@ -108,7 +108,7 @@ VERIFICATION_TOKEN_EXPIRE_HOURS: int = 24
 
 #### 보안 고려사항
 - `resend-verification`: 사용자 존재 여부 미노출 (항상 동일 응답)
-- Rate limit: 5분 이내 재요청 차단 (토큰 만료시간 역산)
+- Rate limit: 1분 이내 재요청 차단 (토큰 만료시간 역산)
 - 이메일 발송 실패 시 가입은 성공 처리 (로그 경고만)
 
 ### 5. Pydantic 스키마
@@ -216,7 +216,7 @@ interface RegisterResponse {
 2. `docker-compose up --build`
 3. 회원가입 → 이메일 수신 확인 → 링크 클릭 → 인증 완료 → 로그인 성공
 4. 미인증 상태로 로그인 시도 → "이메일 인증 필요" 메시지 + 재발송 버튼
-5. 재발송 5분 rate limit 확인
+5. 재발송 1분 rate limit 확인
 6. 만료된 토큰 사용 시 에러 메시지 확인
 
 ### 기존 사용자 호환성
@@ -227,3 +227,13 @@ interface RegisterResponse {
 1. `.env.production`에 SMTP 변수 추가
 2. 버전 업데이트 (`frontend/src/lib/version.ts`)
 3. `docker-compose.prod.yml` 빌드 + 마이그레이션
+
+---
+
+## 관련 기능
+
+- **비밀번호 초기화**: 동일한 SMTP 인프라를 활용하여 비밀번호 초기화 이메일 발송 기능도 구현되어 있음
+  - `POST /api/v1/auth/forgot-password` — 초기화 이메일 발송
+  - `POST /api/v1/auth/reset-password` — 토큰 검증 + 비밀번호 변경
+  - 토큰 만료: 1시간 (이메일 인증 24시간보다 짧게)
+  - Rate limit: 1분 쿨다운 (이메일 인증과 동일)

@@ -391,6 +391,27 @@ CREATE TABLE chat_messages (
 
 ## 8. API 설계
 
+### 인증 API
+
+| Method | Endpoint | 설명 | Request Body | Response |
+|--------|----------|------|-------------|----------|
+| POST | `/api/v1/auth/register` | 회원가입 | `{email, username, password}` | `RegisterResponse` |
+| POST | `/api/v1/auth/login` | 로그인 (OAuth2) | `OAuth2PasswordRequestForm` | `Token` |
+| POST | `/api/v1/auth/login/json` | 로그인 (JSON) | `{email, password}` | `Token` |
+| GET | `/api/v1/auth/verify-email` | 이메일 인증 | Query: `?token=xxx` | `{message}` |
+| POST | `/api/v1/auth/resend-verification` | 인증 이메일 재발송 | `{email}` | `{message}` |
+| POST | `/api/v1/auth/forgot-password` | 비밀번호 초기화 이메일 발송 | `{email}` | `{message}` |
+| POST | `/api/v1/auth/reset-password` | 비밀번호 재설정 | `{token, password}` | `{message}` |
+
+### 사용자 API
+
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/api/v1/users/me` | 내 정보 조회 |
+| PATCH | `/api/v1/users/me` | 내 정보 수정 |
+| GET | `/api/v1/users/{user_id}` | 사용자 정보 조회 |
+| GET | `/api/v1/users/search/{username}` | 사용자 검색 |
+
 ### 일기 API
 
 | Method | Endpoint | 설명 | Request Body | Response |
@@ -686,6 +707,9 @@ AI: "응, 지난주 일기에서도 비슷한 감정이 느껴졌어. 그때는 
 | `/` | 홈 (대시보드) |
 | `/login` | 로그인 |
 | `/register` | 회원가입 |
+| `/verify-email` | 이메일 인증 |
+| `/forgot-password` | 비밀번호 찾기 |
+| `/reset-password` | 비밀번호 재설정 |
 | `/quiz` | 성격 퀴즈 (페르소나 없는 사용자) |
 | `/diaries` | 일기 목록 |
 | `/diaries/new` | 일기 작성 |

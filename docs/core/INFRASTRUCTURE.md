@@ -36,6 +36,9 @@ services:
       - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-dearme_db}
       - SECRET_KEY=${SECRET_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
     ports:
       - "8000:8000"
     volumes:
@@ -101,6 +104,9 @@ services:
       - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
       - SECRET_KEY=${SECRET_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - FRONTEND_URL=${FRONTEND_URL:-https://dearme.shoneylife.com}
     networks:
       - internal
     depends_on:
@@ -521,6 +527,9 @@ vim .env.production
 # - DB_USER, DB_PASSWORD, DB_NAME
 # - SECRET_KEY (강력한 랜덤 문자열)
 # - OPENAI_API_KEY
+# - SMTP_USER (Gmail 주소)
+# - SMTP_PASSWORD (Gmail 앱 비밀번호)
+# - FRONTEND_URL (프론트엔드 URL, 이메일 링크용)
 # - CLOUDFLARE_TUNNEL_TOKEN (옵션)
 ```
 

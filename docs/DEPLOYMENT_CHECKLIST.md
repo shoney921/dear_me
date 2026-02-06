@@ -41,6 +41,9 @@ cat .env.production
 - [ ] `DB_USER`, `DB_PASSWORD`, `DB_NAME` 설정됨
 - [ ] `SECRET_KEY` 강력한 랜덤 문자열로 설정
 - [ ] `OPENAI_API_KEY` 설정됨
+- [ ] `SMTP_USER` Gmail 주소 설정됨 (이메일 인증/비밀번호 초기화)
+- [ ] `SMTP_PASSWORD` Gmail 앱 비밀번호 설정됨
+- [ ] `FRONTEND_URL` 프론트엔드 URL 설정됨 (예: `https://dearme.shoneylife.com`)
 - [ ] `CLOUDFLARE_TUNNEL_TOKEN` 설정됨 (옵션)
 
 ### 4. ✅ Git 커밋
@@ -149,6 +152,8 @@ curl http://localhost:8080
 ### 4. 기능 테스트
 
 - [ ] 회원가입/로그인 정상 작동
+- [ ] 이메일 인증 정상 작동 (회원가입 → 인증 메일 수신 → 링크 클릭 → 인증 완료)
+- [ ] 비밀번호 초기화 정상 작동 (비밀번호 찾기 → 초기화 메일 수신 → 링크 클릭 → 새 비밀번호 설정)
 - [ ] 일기 작성 정상 작동
 - [ ] 페르소나 대화 정상 작동 (스트리밍 포함)
 - [ ] 친구 기능 정상 작동

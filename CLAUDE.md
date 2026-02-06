@@ -80,7 +80,11 @@
 |--------|----------|------|
 | POST | `/api/v1/auth/register` | 회원가입 |
 | POST | `/api/v1/auth/login` | 로그인 (JWT 토큰 발급) |
-| GET | `/api/v1/auth/me` | 현재 사용자 정보 |
+| POST | `/api/v1/auth/login/json` | 로그인 (JSON) |
+| GET | `/api/v1/auth/verify-email` | 이메일 인증 토큰 검증 |
+| POST | `/api/v1/auth/resend-verification` | 인증 이메일 재발송 |
+| POST | `/api/v1/auth/forgot-password` | 비밀번호 초기화 이메일 발송 |
+| POST | `/api/v1/auth/reset-password` | 비밀번호 재설정 |
 
 ### 사용자 (User)
 | Method | Endpoint | 설명 |
@@ -193,6 +197,15 @@
 3. 채팅 화면에서 메시지 입력
 4. AI가 해당 페르소나의 성격/말투로 응답
 5. 대화 내역은 저장되어 나중에 다시 볼 수 있음
+```
+
+### 5. 비밀번호 초기화
+```
+1. 로그인 페이지 → "비밀번호를 잊으셨나요?" 클릭
+2. 이메일 입력 → "초기화 링크 보내기" 클릭
+3. 이메일 수신 → 초기화 링크 클릭
+4. 새 비밀번호 + 확인 입력 → 변경 완료
+5. 로그인 페이지에서 새 비밀번호로 로그인
 ```
 
 ---
@@ -540,6 +553,9 @@ raise HTTPException(status_code=400, detail="Error message")
 - `DATABASE_URL` - PostgreSQL 연결 문자열
 - `SECRET_KEY` - JWT 시크릿 키
 - `OPENAI_API_KEY` - OpenAI API 키
+- `SMTP_USER` - Gmail SMTP 사용자 (이메일 인증/비밀번호 초기화)
+- `SMTP_PASSWORD` - Gmail 앱 비밀번호
+- `FRONTEND_URL` - 프론트엔드 URL (이메일 링크 생성용)
 - `CLOUDFLARE_TUNNEL_TOKEN` - Cloudflare 터널 토큰 (배포 시)
 
 ---
@@ -566,17 +582,28 @@ raise HTTPException(status_code=400, detail="Error message")
 - [x] 일기 수정 기능
 - [x] AI 일기 프롬프트 제안
 
-### Phase 4: 심리 케어 (진행 중)
-- [ ] 멘탈 상태 분석 시스템
-- [ ] 심리 인바디 체크 (6축 레이더 차트)
-- [ ] 감정 기반 피드백
-- [ ] 책 추천 기능
-- [ ] 주간/월간 리포트
+### Phase 4: 심리 케어 (완료)
+- [x] 멘탈 상태 분석 시스템
+- [x] 심리 인바디 체크 (6축 레이더 차트)
+- [x] 감정 기반 피드백
+- [x] 책 추천 기능
+- [x] 주간/월간 리포트
 
-### Phase 5: 수익화 (후순위)
+### Phase 5: 온보딩 & 구독 (완료)
+- [x] 성격 퀴즈 (임시 페르소나 생성)
+- [x] 페르소나 레벨 시스템
+- [x] 프리미엄 구독 시스템 (테스트)
+- [x] 법적 페이지 (개인정보처리방침, 이용약관)
+
+### Phase 6: 인증 강화 (완료)
+- [x] 이메일 인증 (회원가입 시 Gmail SMTP)
+- [x] 비밀번호 초기화 (이메일 기반)
+
+### Phase 7: 수익화 (후순위)
 > 상세 내용은 `docs/future/MONETIZATION_ROADMAP.md` 참조
-- [ ] 프리미엄 구독 시스템
+- [ ] 결제 시스템 연동
 - [ ] 케미 분석 기능
+- [ ] 멀티모달 캐릭터 (DALL-E 3)
 
 ---
 

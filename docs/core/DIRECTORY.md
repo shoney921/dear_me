@@ -9,63 +9,70 @@ dear-me/
 │   │   ├── api/
 │   │   │   └── api_v1/
 │   │   │       ├── endpoints/        # API 엔드포인트
-│   │   │       │   ├── auth.py       # 인증 (로그인/회원가입)
-│   │   │       │   ├── diary.py      # 일기 CRUD
+│   │   │       │   ├── auth.py       # 인증 (로그인/회원가입/이메일인증/비밀번호초기화)
+│   │   │       │   ├── diary.py      # 일기 CRUD + 통계
 │   │   │       │   ├── persona.py    # 페르소나 관리
 │   │   │       │   ├── friend.py     # 친구 관리
 │   │   │       │   ├── chat.py       # 페르소나 대화
-│   │   │       │   └── user.py       # 사용자 정보
+│   │   │       │   ├── user.py       # 사용자 정보
+│   │   │       │   ├── notification.py # 알림
+│   │   │       │   ├── mental.py     # 심리 케어
+│   │   │       │   ├── quiz.py       # 성격 퀴즈
+│   │   │       │   └── subscription.py # 구독 관리
 │   │   │       └── api.py            # API 라우터 통합
 │   │   ├── core/
-│   │   │   ├── config.py             # 환경 설정 (Settings)
+│   │   │   ├── config.py             # 환경 설정 (Settings, SMTP, JWT 등)
 │   │   │   ├── database.py           # DB 연결 설정
-│   │   │   ├── security.py           # JWT 토큰 처리
-│   │   │   └── deps.py               # 의존성 주입 (get_db, get_current_user)
+│   │   │   ├── security.py           # JWT 토큰 처리, 비밀번호 해싱
+│   │   │   ├── deps.py               # 의존성 주입 (get_db, get_current_user)
+│   │   │   └── business_logger.py    # 비즈니스 이벤트 로깅
 │   │   ├── models/
-│   │   │   ├── user.py               # User 모델
+│   │   │   ├── user.py               # User 모델 (이메일인증, 비밀번호초기화 필드 포함)
 │   │   │   ├── diary.py              # Diary 모델
 │   │   │   ├── diary_embedding.py    # DiaryEmbedding 모델 (RAG용)
 │   │   │   ├── persona.py            # Persona 모델
 │   │   │   ├── friendship.py         # Friendship 모델
-│   │   │   └── chat.py               # PersonaChat, ChatMessage 모델
+│   │   │   ├── chat.py               # PersonaChat, ChatMessage 모델
+│   │   │   ├── notification.py       # Notification 모델
+│   │   │   ├── mental_analysis.py    # MentalAnalysis 모델
+│   │   │   ├── mental_report.py      # MentalReport 모델
+│   │   │   ├── subscription.py       # Subscription 모델
+│   │   │   └── usage.py              # DailyUsage 모델
 │   │   ├── schemas/
-│   │   │   ├── user.py               # User 스키마 (요청/응답)
+│   │   │   ├── auth.py               # Auth 스키마 (로그인/회원가입/비밀번호초기화)
+│   │   │   ├── user.py               # User 스키마
 │   │   │   ├── diary.py              # Diary 스키마
 │   │   │   ├── persona.py            # Persona 스키마
 │   │   │   ├── friendship.py         # Friendship 스키마
-│   │   │   └── chat.py               # Chat 스키마
+│   │   │   ├── chat.py               # Chat 스키마
+│   │   │   ├── notification.py       # Notification 스키마
+│   │   │   ├── mental.py             # Mental 스키마
+│   │   │   ├── quiz.py               # Quiz 스키마
+│   │   │   └── subscription.py       # Subscription 스키마
 │   │   ├── services/
-│   │   │   ├── auth_service.py       # 인증 로직
-│   │   │   ├── diary_service.py      # 일기 비즈니스 로직
+│   │   │   ├── chat_service.py       # 채팅 로직 (RAG 통합)
+│   │   │   ├── email_service.py      # 이메일 발송 (인증/비밀번호초기화)
 │   │   │   ├── embedding_service.py  # 임베딩 서비스 (RAG용)
+│   │   │   ├── mental_service.py     # 심리 분석 로직
+│   │   │   ├── milestone_service.py  # 마일스톤 추적
 │   │   │   ├── persona_service.py    # 페르소나 생성/대화 (LLM)
-│   │   │   ├── friend_service.py     # 친구 관리 로직
-│   │   │   └── chat_service.py       # 채팅 로직 (RAG 통합)
+│   │   │   └── subscription_service.py # 구독 관리 로직
 │   │   ├── constants/
-│   │   │   ├── moods.py              # 기분 상수 (happy, sad, ...)
-│   │   │   ├── weather.py            # 날씨 상수 (sunny, rainy, ...)
-│   │   │   └── prompts.py            # LLM 프롬프트 상수
+│   │   │   ├── moods.py              # 기분 상수
+│   │   │   ├── weather.py            # 날씨 상수
+│   │   │   ├── prompts.py            # LLM 프롬프트 상수
+│   │   │   ├── books.py              # 책 추천 데이터
+│   │   │   ├── quiz.py               # 퀴즈 질문 데이터
+│   │   │   └── subscription.py       # 구독 플랜 정의
 │   │   └── main.py                   # FastAPI 앱 진입점
 │   ├── alembic/
 │   │   ├── versions/                 # 마이그레이션 파일들
-│   │   │   ├── 001_create_users.py
-│   │   │   ├── 002_create_diaries.py
-│   │   │   ├── 003_create_personas.py
-│   │   │   ├── 004_create_friendships.py
-│   │   │   └── 005_create_chats.py
 │   │   └── env.py                    # Alembic 환경 설정
 │   ├── scripts/
 │   │   ├── seed_data.py              # 시드 데이터 생성
 │   │   ├── seed_contents.py          # 시드 데이터 내용
 │   │   └── embed_diaries.py          # 일기 임베딩 배치 스크립트 (RAG)
-│   ├── tests/
-│   │   ├── conftest.py               # pytest 설정
-│   │   ├── test_auth.py
-│   │   ├── test_diary.py
-│   │   ├── test_persona.py
-│   │   └── test_friend.py
 │   ├── Dockerfile                    # DEV용
-│   ├── Dockerfile.prod               # PROD용
 │   ├── alembic.ini
 │   └── requirements.txt
 │
@@ -73,86 +80,103 @@ dear-me/
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── common/               # 공통 컴포넌트
-│   │   │   │   ├── Layout.tsx        # 레이아웃 (Header, Footer)
-│   │   │   │   ├── Header.tsx        # 헤더 네비게이션
+│   │   │   │   ├── Layout.tsx        # 레이아웃 (Header + BottomTabBar)
+│   │   │   │   ├── Header.tsx        # 데스크탑 헤더
+│   │   │   │   ├── MobileHeader.tsx  # 모바일 헤더
+│   │   │   │   ├── BottomTabBar.tsx  # 모바일 하단 탭
 │   │   │   │   ├── ProtectedRoute.tsx # 인증 라우트 가드
-│   │   │   │   ├── Loading.tsx       # 로딩 스피너
-│   │   │   │   └── Avatar.tsx        # 아바타 컴포넌트
+│   │   │   │   ├── ProfileDropdown.tsx # 프로필 드롭다운
+│   │   │   │   └── MoreMenu.tsx      # 추가 메뉴
 │   │   │   ├── diary/                # 일기 관련 컴포넌트
-│   │   │   │   ├── DiaryForm.tsx     # 일기 작성/수정 폼
-│   │   │   │   ├── DiaryCard.tsx     # 일기 카드
-│   │   │   │   ├── DiaryCalendar.tsx # 캘린더 뷰
-│   │   │   │   ├── MoodSelector.tsx  # 기분 선택
-│   │   │   │   └── WeatherSelector.tsx # 날씨 선택
+│   │   │   │   └── StreakCard.tsx    # 일기 연속 기록 카드
+│   │   │   ├── home/                 # 홈 대시보드 컴포넌트
+│   │   │   │   ├── EmotionCalendar.tsx # 감정 캘린더
+│   │   │   │   ├── PersonaGreeting.tsx # 페르소나 인사말
+│   │   │   │   └── WeeklyInsightCard.tsx # 주간 인사이트
+│   │   │   ├── mental/               # 심리 케어 컴포넌트
+│   │   │   │   ├── RadarChart.tsx    # 6축 레이더 차트
+│   │   │   │   ├── MentalStatusCard.tsx # 멘탈 상태 카드
+│   │   │   │   ├── FeedbackCard.tsx  # 피드백 카드
+│   │   │   │   ├── MentalHistoryChart.tsx # 이력 차트
+│   │   │   │   ├── BookCard.tsx      # 책 추천 카드
+│   │   │   │   └── ReportCard.tsx    # 리포트 카드
 │   │   │   ├── persona/              # 페르소나 관련 컴포넌트
-│   │   │   │   ├── PersonaCard.tsx   # 페르소나 프로필 카드
-│   │   │   │   ├── PersonaStatus.tsx # 생성 상태/진행률
-│   │   │   │   └── TraitBadge.tsx    # 특성 태그
-│   │   │   ├── chat/                 # 채팅 관련 컴포넌트
-│   │   │   │   ├── ChatRoom.tsx      # 채팅방
-│   │   │   │   ├── ChatMessage.tsx   # 메시지 버블
-│   │   │   │   ├── ChatInput.tsx     # 메시지 입력
-│   │   │   │   └── ChatList.tsx      # 대화 목록
-│   │   │   ├── friend/               # 친구 관련 컴포넌트
-│   │   │   │   ├── FriendCard.tsx    # 친구 카드
-│   │   │   │   ├── FriendList.tsx    # 친구 목록
-│   │   │   │   ├── FriendRequest.tsx # 친구 요청 아이템
-│   │   │   │   └── FriendSearch.tsx  # 친구 검색
+│   │   │   │   └── PersonaCustomizeModal.tsx # 커스터마이징 모달
 │   │   │   └── ui/                   # 기본 UI 컴포넌트
 │   │   │       ├── Button.tsx
 │   │   │       ├── Input.tsx
 │   │   │       ├── Card.tsx
 │   │   │       ├── Modal.tsx
-│   │   │       └── Toast.tsx
+│   │   │       ├── Loading.tsx
+│   │   │       ├── Skeleton.tsx
+│   │   │       ├── ConfirmDialog.tsx
+│   │   │       └── Switch.tsx
 │   │   ├── pages/
 │   │   │   ├── HomePage.tsx          # 대시보드 (메인)
 │   │   │   ├── LoginPage.tsx         # 로그인
 │   │   │   ├── RegisterPage.tsx      # 회원가입
+│   │   │   ├── VerifyEmailPage.tsx   # 이메일 인증
+│   │   │   ├── ForgotPasswordPage.tsx # 비밀번호 찾기
+│   │   │   ├── ResetPasswordPage.tsx # 비밀번호 재설정
 │   │   │   ├── diary/
 │   │   │   │   ├── DiaryListPage.tsx # 일기 목록
 │   │   │   │   ├── DiaryNewPage.tsx  # 일기 작성
-│   │   │   │   └── DiaryDetailPage.tsx # 일기 상세/수정
+│   │   │   │   ├── DiaryDetailPage.tsx # 일기 상세/수정
+│   │   │   │   └── DiaryStatsPage.tsx # 일기 통계
 │   │   │   ├── persona/
 │   │   │   │   ├── PersonaPage.tsx   # 내 페르소나
 │   │   │   │   └── PersonaChatPage.tsx # 페르소나 대화
 │   │   │   ├── friend/
-│   │   │   │   ├── FriendListPage.tsx # 친구 목록
-│   │   │   │   ├── FriendSearchPage.tsx # 친구 검색
-│   │   │   │   ├── FriendRequestPage.tsx # 친구 요청 관리
-│   │   │   │   ├── FriendProfilePage.tsx # 친구 프로필
-│   │   │   │   └── FriendChatPage.tsx # 친구 페르소나 대화
-│   │   │   └── SettingsPage.tsx      # 설정
+│   │   │   │   └── FriendListPage.tsx # 친구 목록/검색/요청
+│   │   │   ├── notification/
+│   │   │   │   └── NotificationListPage.tsx # 알림 목록
+│   │   │   ├── mental/
+│   │   │   │   ├── MentalDashboardPage.tsx # 심리 대시보드
+│   │   │   │   ├── MentalReportPage.tsx # 주간/월간 리포트
+│   │   │   │   └── BookRecommendationPage.tsx # 책 추천
+│   │   │   ├── premium/
+│   │   │   │   └── PremiumPage.tsx   # 프리미엄 구독
+│   │   │   ├── quiz/
+│   │   │   │   └── QuizPage.tsx      # 성격 퀴즈
+│   │   │   └── legal/
+│   │   │       ├── PrivacyPolicyPage.tsx # 개인정보처리방침
+│   │   │       └── TermsOfServicePage.tsx # 이용약관
 │   │   ├── services/
-│   │   │   ├── authService.ts        # 인증 API
+│   │   │   ├── authService.ts        # 인증 API (로그인/회원가입/비밀번호초기화)
 │   │   │   ├── diaryService.ts       # 일기 API
 │   │   │   ├── personaService.ts     # 페르소나 API
 │   │   │   ├── friendService.ts      # 친구 API
-│   │   │   └── chatService.ts        # 채팅 API
+│   │   │   ├── chatService.ts        # 채팅 API
+│   │   │   ├── notificationService.ts # 알림 API
+│   │   │   ├── mentalService.ts      # 심리 케어 API
+│   │   │   ├── quizService.ts        # 퀴즈 API
+│   │   │   └── subscriptionService.ts # 구독 API
 │   │   ├── store/
-│   │   │   ├── authStore.ts          # 인증 상태 (Zustand)
-│   │   │   ├── diaryStore.ts         # 일기 상태
-│   │   │   └── personaStore.ts       # 페르소나 상태
+│   │   │   └── authStore.ts          # 인증 상태 (Zustand + persist)
 │   │   ├── types/
 │   │   │   ├── auth.ts               # 인증 타입
 │   │   │   ├── diary.ts              # 일기 타입
 │   │   │   ├── persona.ts            # 페르소나 타입
 │   │   │   ├── friend.ts             # 친구 타입
-│   │   │   └── chat.ts               # 채팅 타입
+│   │   │   ├── chat.ts               # 채팅 타입
+│   │   │   ├── notification.ts       # 알림 타입
+│   │   │   ├── mental.ts             # 심리 케어 타입
+│   │   │   ├── quiz.ts               # 퀴즈 타입
+│   │   │   └── subscription.ts       # 구독 타입
 │   │   ├── lib/
 │   │   │   ├── api.ts                # Axios 인스턴스 설정
 │   │   │   ├── utils.ts              # 유틸리티 함수 (cn, formatDate)
-│   │   │   └── constants.ts          # 상수 (API_BASE_URL)
-│   │   ├── hooks/
-│   │   │   ├── useAuth.ts            # 인증 훅
-│   │   │   ├── useDiaries.ts         # 일기 쿼리 훅
-│   │   │   └── usePersona.ts         # 페르소나 쿼리 훅
+│   │   │   ├── constants.ts          # 상수 (API_BASE_URL)
+│   │   │   ├── error.ts              # API 에러 → 한국어 변환
+│   │   │   ├── queryClient.ts        # TanStack Query 설정
+│   │   │   └── version.ts            # 앱 버전 관리 (배포 시 캐시 초기화)
 │   │   ├── App.tsx                   # React Router 설정
 │   │   ├── main.tsx                  # 진입점
-│   │   └── index.css                 # 글로벌 스타일
-│   ├── public/
-│   │   └── favicon.ico
+│   │   └── App.css                   # 글로벌 스타일
+│   ├── public/                       # 정적 파일 (로고, 배경 등)
 │   ├── Dockerfile                    # DEV용
 │   ├── Dockerfile.prod               # PROD용 (multi-stage)
+│   ├── nginx.conf                    # 프로덕션 Nginx 설정
 │   ├── index.html
 │   ├── package.json
 │   ├── vite.config.ts
@@ -160,23 +184,36 @@ dear-me/
 │   ├── postcss.config.js
 │   └── tsconfig.json
 │
-├── nginx/                            # PROD 웹서버 설정
-│   ├── nginx.conf                    # 메인 설정
-│   └── conf.d/
-│       └── default.conf              # 서버 블록 설정
-│
 ├── docs/                             # 프로젝트 문서
-│   ├── RPD.md
-│   ├── TECH_STACK.md
-│   ├── DIRECTORY.md
-│   ├── INFRASTRUCTURE.md
-│   ├── API_SPEC.md
-│   └── AI_PROMPTS.md
+│   ├── RPD.md                        # 요구사항 및 설계
+│   ├── EMAIL_VERIFICATION.md         # 이메일 인증 설계서
+│   ├── DEPLOYMENT_CHECKLIST.md       # 배포 체크리스트
+│   ├── PRODUCTION_CHECKLIST.md       # 프로덕션 준비 체크리스트
+│   ├── SECURITY_CHECKLIST.md         # 보안 체크리스트
+│   ├── MENTAL_AXES_MIGRATION.md      # 심리 분석 축 마이그레이션
+│   ├── core/
+│   │   ├── TECH_STACK.md             # 기술 스택 상세
+│   │   ├── DIRECTORY.md              # 디렉토리 구조 (이 파일)
+│   │   ├── INFRASTRUCTURE.md         # Docker/배포 설정
+│   │   ├── SCALING_STRATEGY.md       # 스케일링 전략
+│   │   └── AI_PROMPTS.md             # LLM 프롬프트 설계
+│   ├── future/
+│   │   ├── FEATURE_IDEAS.md          # 기능 아이디어
+│   │   ├── MONETIZATION_ROADMAP.md   # 수익화 로드맵
+│   │   └── UX_UI_IMPROVEMENTS.md     # UX/UI 개선안
+│   └── archive/
+│       └── PHASE3_TODO.md            # Phase 3 완료 기록
+│
+├── scripts/                          # 운영 스크립트
+│   ├── backup_db.sh                  # DB 백업
+│   └── restore_db.sh                # DB 복원
 │
 ├── docker-compose.yml                # DEV 환경
 ├── docker-compose.prod.yml           # PROD 환경
 ├── .env.example                      # 환경변수 템플릿
 ├── .env                              # 실제 환경변수 (Git 제외)
+├── .env.production                   # 프로덕션 환경변수 (Git 제외)
+├── CLAUDE.md                         # Claude Code 프로젝트 컨텍스트
 ├── .gitignore
 └── README.md
 ```
