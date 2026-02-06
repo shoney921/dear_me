@@ -20,7 +20,7 @@ export default function MobileHeader() {
       <div className="flex h-12 items-center justify-between px-4">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
-          <img src="/dearme-logo.png" alt="DearMe" className="h-7 w-7" />
+          <img src="/dearme-menu.png" alt="DearMe" className="h-5 w-auto" />
           <span className="text-lg font-bold text-primary">DearMe</span>
         </Link>
 
