@@ -16,6 +16,9 @@ class NotificationType(str, Enum):
     MILESTONE_7 = "milestone_7"  # 일기 7개 달성 (완전한 페르소나 생성 가능)
     PERSONA_UPGRADE_AVAILABLE = "persona_upgrade_available"  # 페르소나 업그레이드 가능
     PERSONA_UPGRADED = "persona_upgraded"  # 페르소나 업그레이드 완료
+    # Chemistry notifications
+    CHEMISTRY_REQUEST = "chemistry_request"  # 케미 분석 요청
+    CHEMISTRY_ACCEPTED = "chemistry_accepted"  # 케미 분석 완료
 
 
 class NotificationBase(BaseModel):

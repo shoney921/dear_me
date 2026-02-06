@@ -1,12 +1,13 @@
 import logging
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.deps import get_db
+from app.core.limiter import limiter
 from app.core.security import create_access_token, verify_password, get_password_hash
 from app.core.business_logger import biz_log
 from app.models.user import User
@@ -73,7 +74,8 @@ def _create_token_response(user: User) -> dict:
 
 
 @router.post("/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
-def register(user_in: UserCreate, db: Session = Depends(get_db)):
+@limiter.limit("3/minute")
+def register(request: Request, user_in: UserCreate, db: Session = Depends(get_db)):
     """회원가입"""
     # 이메일 중복 체크
     if db.query(User).filter(User.email == user_in.email).first():
@@ -121,7 +123,8 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)) -> dict:
+@limiter.limit("5/minute")
+def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)) -> dict:
     """로그인 (OAuth2 호환)"""
     user = _authenticate_user(db, form_data.username, form_data.password, include_www_auth=True)
     biz_log.user_login(user.username)
@@ -129,7 +132,8 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
 
 @router.post("/login/json", response_model=Token)
-def login_json(login_data: LoginRequest, db: Session = Depends(get_db)) -> dict:
+@limiter.limit("5/minute")
+def login_json(request: Request, login_data: LoginRequest, db: Session = Depends(get_db)) -> dict:
     """로그인 (JSON)"""
     user = _authenticate_user(db, login_data.email, login_data.password)
     biz_log.user_login(user.username)
@@ -149,8 +153,9 @@ def verify_email(token: str, db: Session = Depends(get_db)):
 
 
 @router.post("/resend-verification")
+@limiter.limit("3/minute")
 def resend_verification(
-    data: ResendVerificationRequest, db: Session = Depends(get_db)
+    request: Request, data: ResendVerificationRequest, db: Session = Depends(get_db)
 ):
     """인증 이메일 재발송"""
     # 항상 동일한 응답 (사용자 존재 여부 미노출)
@@ -178,8 +183,9 @@ def resend_verification(
 
 
 @router.post("/forgot-password")
+@limiter.limit("5/minute")
 def forgot_password(
-    data: ForgotPasswordRequest, db: Session = Depends(get_db)
+    request: Request, data: ForgotPasswordRequest, db: Session = Depends(get_db)
 ):
     """비밀번호 초기화 이메일 발송"""
     # 항상 동일한 응답 (사용자 존재 여부 미노출)
@@ -207,8 +213,9 @@ def forgot_password(
 
 
 @router.post("/reset-password")
+@limiter.limit("5/minute")
 def reset_password(
-    data: ResetPasswordRequest, db: Session = Depends(get_db)
+    request: Request, data: ResetPasswordRequest, db: Session = Depends(get_db)
 ):
     """비밀번호 재설정"""
     user = verify_password_reset_token(data.token, db)

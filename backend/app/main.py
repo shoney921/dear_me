@@ -1,10 +1,13 @@
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
 
 from app.api.api_v1.api import api_router
 from app.core.config import settings
+from app.core.limiter import limiter
 
 
 # 로깅 설정
@@ -33,6 +36,18 @@ app = FastAPI(
     version="0.1.0",
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
 )
+
+# Rate Limiting
+app.state.limiter = limiter
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Too many requests. Please try again later."},
+    )
+
 
 # CORS 설정
 app.add_middleware(

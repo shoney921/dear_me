@@ -186,9 +186,9 @@ class ChatService:
             return self._get_default_response(persona.name)
 
         try:
-            from openai import OpenAI
+            from openai import AsyncOpenAI
 
-            client = OpenAI(api_key=settings.OPENAI_API_KEY)
+            client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
             # 프롬프트 선택 (RAG 컨텍스트가 있으면 RAG 프롬프트 사용)
             has_rag_context = rag_context and "관련 기억이 없습니다" not in rag_context
@@ -249,7 +249,7 @@ class ChatService:
                         user_message=user_message,
                     )
 
-            response = client.chat.completions.create(
+            response = await client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": f"You are {persona.name}. Respond in Korean like chatting with a close friend."},

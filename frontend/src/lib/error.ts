@@ -98,6 +98,8 @@ function translateErrorDetail(detail: string | Array<{ msg: string }> | undefine
     'Subscription already cancelled': '이미 취소된 구독입니다.',
     'Subscription already expired': '이미 만료된 구독입니다.',
     'Invalid subscription period': '유효하지 않은 구독 기간입니다.',
+    // Rate Limiting
+    'Too many requests. Please try again later.': '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.',
   }
 
   return translations[detail] || detail

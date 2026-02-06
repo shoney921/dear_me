@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { Bell, Check, CheckCheck, Trash2, UserPlus, BookOpen, User } from 'lucide-react'
+import { Bell, Check, CheckCheck, Trash2, UserPlus, BookOpen, User, Heart } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { notificationService } from '@/services/notificationService'
@@ -20,6 +20,9 @@ const getNotificationIcon = (type: NotificationType) => {
       return BookOpen
     case 'persona_updated':
       return User
+    case 'chemistry_request':
+    case 'chemistry_accepted':
+      return Heart
     default:
       return Bell
   }
@@ -34,6 +37,9 @@ const getNotificationLink = (notification: Notification): string | undefined => 
       return '/diaries/new'
     case 'persona_updated':
       return '/persona'
+    case 'chemistry_request':
+    case 'chemistry_accepted':
+      return '/friends'
     default:
       return undefined
   }

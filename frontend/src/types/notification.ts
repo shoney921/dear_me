@@ -8,6 +8,8 @@ export type NotificationType =
   | 'milestone_7'
   | 'persona_upgrade_available'
   | 'persona_upgraded'
+  | 'chemistry_request'
+  | 'chemistry_accepted'
 
 export interface Notification {
   id: number

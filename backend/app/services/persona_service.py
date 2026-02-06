@@ -65,13 +65,13 @@ class PersonaService:
             return self._get_default_persona()
 
         try:
-            from openai import OpenAI
+            from openai import AsyncOpenAI
 
-            client = OpenAI(api_key=settings.OPENAI_API_KEY)
+            client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
             prompt = PERSONA_GENERATION_PROMPT.format(diaries=diaries)
 
-            response = client.chat.completions.create(
+            response = await client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": "You are a persona generation expert. Always respond in valid JSON format."},
@@ -156,14 +156,14 @@ class PersonaService:
             return self._get_default_quiz_persona(traits)
 
         try:
-            from openai import OpenAI
+            from openai import AsyncOpenAI
 
-            client = OpenAI(api_key=settings.OPENAI_API_KEY)
+            client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
             traits_text = ", ".join(traits)
             prompt = QUIZ_PERSONA_GENERATION_PROMPT.format(traits=traits_text)
 
-            response = client.chat.completions.create(
+            response = await client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {

@@ -5,7 +5,7 @@
 
 // 버전이 변경될 때마다 이 값을 업데이트하세요
 // 예: "1.0.0" -> "1.0.1" (배포 시)
-export const APP_VERSION = '1.4.0'
+export const APP_VERSION = '1.5.0'
 
 const VERSION_KEY = 'app_version'
 
