@@ -25,6 +25,9 @@ export default function BottomTabBar() {
 
   const isMoreActive = location.pathname.startsWith('/friends') || location.pathname.startsWith('/premium')
 
+  // 채팅 페이지에서는 하단 탭바 숨김 (키보드 올라올 때 갭 방지)
+  if (location.pathname.startsWith('/persona/chat')) return null
+
   return (
     <>
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pb-safe sm:hidden">

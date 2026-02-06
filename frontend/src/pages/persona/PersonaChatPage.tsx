@@ -160,7 +160,7 @@ export default function PersonaChatPage() {
   }
 
   return (
-    <div className="mx-auto flex h-[calc(100dvh-8rem-68px)] sm:h-[calc(100dvh-8rem)] max-w-2xl flex-col">
+    <div className="mx-auto flex h-[calc(100dvh-4.5rem)] sm:h-[calc(100dvh-8rem)] max-w-2xl flex-col -mb-20 sm:mb-0">
       {/* Header */}
       <div className="flex items-center gap-4 border-b pb-4">
         <Button variant="ghost" size="icon" onClick={() => navigate('/persona')}>
@@ -243,7 +243,7 @@ export default function PersonaChatPage() {
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="border-t pt-4">
+      <form onSubmit={handleSubmit} className="border-t pt-2 pb-safe">
         {error && (
           <div className="mb-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
             {error}
