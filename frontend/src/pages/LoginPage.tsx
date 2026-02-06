@@ -258,6 +258,9 @@ export default function LoginPage() {
             >
               {loginMutation.isPending ? '로그인 중...' : '로그인'}
             </Button>
+            <Link to="/forgot-password" className="text-sm text-muted-foreground hover:text-primary hover:underline">
+              비밀번호를 잊으셨나요?
+            </Link>
             <p className="text-center text-sm text-muted-foreground">
               계정이 없으신가요?{' '}
               <Link to="/register" className="text-primary hover:underline">

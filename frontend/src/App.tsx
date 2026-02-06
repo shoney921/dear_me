@@ -21,6 +21,8 @@ import FriendListPage from '@/pages/friend/FriendListPage'
 import NotificationListPage from '@/pages/notification/NotificationListPage'
 import PremiumPage from '@/pages/premium/PremiumPage'
 import VerifyEmailPage from '@/pages/VerifyEmailPage'
+import ForgotPasswordPage from '@/pages/ForgotPasswordPage'
+import ResetPasswordPage from '@/pages/ResetPasswordPage'
 import PrivacyPolicyPage from '@/pages/legal/PrivacyPolicyPage'
 import TermsOfServicePage from '@/pages/legal/TermsOfServicePage'
 import { MentalDashboardPage, BookRecommendationPage, MentalReportPage } from '@/pages/mental'
@@ -61,6 +63,8 @@ function App() {
         element={isAuthenticated ? <Navigate to="/" replace /> : <RegisterPage />}
       />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/privacy" element={<PrivacyPolicyPage />} />
       <Route path="/terms" element={<TermsOfServicePage />} />
 

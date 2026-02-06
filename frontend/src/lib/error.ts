@@ -88,6 +88,9 @@ function translateErrorDetail(detail: string | Array<{ msg: string }> | undefine
     'Email not verified': '이메일 인증이 필요합니다. 이메일을 확인해주세요.',
     'Invalid or expired verification token': '인증 링크가 만료되었거나 유효하지 않습니다.',
     'Please wait before requesting another verification email': '잠시 후 다시 시도해주세요.',
+    // 비밀번호 초기화 관련
+    'Invalid or expired password reset token': '비밀번호 초기화 링크가 만료되었거나 유효하지 않습니다.',
+    'Please wait before requesting another password reset email': '잠시 후 다시 시도해주세요.',
     // 구독 관련
     'Subscription not found': '구독 정보를 찾을 수 없습니다.',
     'Cannot cancel free plan': '무료 플랜은 취소할 수 없습니다.',

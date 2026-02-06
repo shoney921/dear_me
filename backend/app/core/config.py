@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     SMTP_FROM_NAME: str = "DearMe"
     FRONTEND_URL: str = "http://localhost:5173"
     VERIFICATION_TOKEN_EXPIRE_HOURS: int = 24
+    PASSWORD_RESET_TOKEN_EXPIRE_HOURS: int = 1
 
     # OpenAI
     OPENAI_API_KEY: str = ""

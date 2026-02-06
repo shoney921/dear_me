@@ -10,12 +10,23 @@ from app.core.deps import get_db
 from app.core.security import create_access_token, verify_password, get_password_hash
 from app.core.business_logger import biz_log
 from app.models.user import User
-from app.schemas.auth import Token, LoginRequest, RegisterResponse, ResendVerificationRequest
+from app.schemas.auth import (
+    Token,
+    LoginRequest,
+    RegisterResponse,
+    ResendVerificationRequest,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
+)
 from app.schemas.user import UserCreate
 from app.services.email_service import (
     create_verification_token,
     send_verification_email,
     verify_token,
+    create_password_reset_token,
+    send_password_reset_email,
+    verify_password_reset_token,
+    invalidate_password_reset_token,
 )
 
 logger = logging.getLogger(__name__)
@@ -164,3 +175,50 @@ def resend_verification(
     send_verification_email(user, token)
 
     return success_message
+
+
+@router.post("/forgot-password")
+def forgot_password(
+    data: ForgotPasswordRequest, db: Session = Depends(get_db)
+):
+    """비밀번호 초기화 이메일 발송"""
+    # 항상 동일한 응답 (사용자 존재 여부 미노출)
+    success_message = {"message": "비밀번호 초기화 이메일이 발송되었습니다. 이메일을 확인해주세요."}
+
+    user = db.query(User).filter(User.email == data.email).first()
+    if not user:
+        return success_message
+
+    # Rate limit: 1분 이내 재요청 차단
+    if user.password_reset_token_expires_at:
+        token_created_at = user.password_reset_token_expires_at - timedelta(
+            hours=settings.PASSWORD_RESET_TOKEN_EXPIRE_HOURS
+        )
+        if datetime.utcnow() - token_created_at < timedelta(minutes=1):
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Please wait before requesting another password reset email",
+            )
+
+    token = create_password_reset_token(user, db)
+    send_password_reset_email(user, token)
+
+    return success_message
+
+
+@router.post("/reset-password")
+def reset_password(
+    data: ResetPasswordRequest, db: Session = Depends(get_db)
+):
+    """비밀번호 재설정"""
+    user = verify_password_reset_token(data.token, db)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired password reset token",
+        )
+
+    user.hashed_password = get_password_hash(data.password)
+    invalidate_password_reset_token(user, db)
+
+    return {"message": "비밀번호가 성공적으로 변경되었습니다."}
