@@ -30,7 +30,7 @@ export default function HomePage() {
     queryFn: personaService.getStatus,
   })
 
-  const { data: myPersona } = useQuery({
+  const { data: myPersona, isLoading: isLoadingMyPersona } = useQuery({
     queryKey: ['myPersona'],
     queryFn: personaService.getMyPersona,
     enabled: !!personaStatus?.has_persona,
@@ -41,7 +41,7 @@ export default function HomePage() {
     queryFn: diaryService.getWeeklyInsight,
   })
 
-  if (isLoadingDiary || isLoadingPersona || isLoadingStats) {
+  if (isLoadingDiary || isLoadingPersona || isLoadingMyPersona || isLoadingStats) {
     return <PageLoading />
   }
 
