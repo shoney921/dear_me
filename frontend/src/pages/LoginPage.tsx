@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { isAxiosError } from 'axios'
 
 import { useAuthStore } from '@/store/authStore'
 import { authService } from '@/services/authService'
@@ -24,11 +25,25 @@ export default function LoginPage() {
 
   // Check if user just registered
   const isNewUser = location.state?.newUser === true
+  const verificationSent = location.state?.verificationSent === true
+  const registeredEmail = location.state?.email as string | undefined
 
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(registeredEmail || '')
   const [password, setPassword] = useState('')
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [touched, setTouched] = useState<Record<string, boolean>>({})
+  const [showVerificationBanner, setShowVerificationBanner] = useState(verificationSent)
+  const [bannerEmail, setBannerEmail] = useState(registeredEmail || '')
+
+  const resendMutation = useMutation({
+    mutationFn: () => authService.resendVerification({ email: bannerEmail }),
+    onSuccess: () => {
+      toast.success('인증 이메일이 재발송되었습니다. 이메일을 확인해주세요.')
+    },
+    onError: (err) => {
+      toast.error(getApiErrorMessage(err))
+    },
+  })
 
   const loginMutation = useMutation({
     mutationFn: authService.login,
@@ -61,6 +76,15 @@ export default function LoginPage() {
       }
     },
     onError: (err) => {
+      // 이메일 미인증 403 감지
+      if (
+        isAxiosError(err) &&
+        err.response?.status === 403 &&
+        err.response?.data?.detail === 'Email not verified'
+      ) {
+        setShowVerificationBanner(true)
+        setBannerEmail(email)
+      }
       toast.error(getApiErrorMessage(err))
     },
   })
@@ -124,7 +148,7 @@ export default function LoginPage() {
   const hasError = (field: string) => touched[field] && fieldErrors[field as keyof FieldErrors]
 
   return (
-    <div 
+    <div
       className="min-h-screen bg-cover bg-center bg-fixed"
       style={{ backgroundImage: 'url(/dearme-background.png)' }}
     >
@@ -137,6 +161,24 @@ export default function LoginPage() {
           <CardTitle className="text-2xl">DearMe</CardTitle>
           <CardDescription>일기 기반 AI 페르소나 서비스</CardDescription>
         </CardHeader>
+
+        {showVerificationBanner && (
+          <div className="mx-6 mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+            <p className="text-sm text-yellow-800 mb-2">
+              이메일 인증이 필요합니다. <strong>{bannerEmail}</strong>로 발송된 인증 메일을 확인해주세요.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={resendMutation.isPending}
+              onClick={() => resendMutation.mutate()}
+            >
+              {resendMutation.isPending ? '발송 중...' : '인증 메일 재발송'}
+            </Button>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">

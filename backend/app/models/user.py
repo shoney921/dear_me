@@ -16,6 +16,9 @@ class User(Base):
     profile_image = Column(String(500), nullable=True)
     rag_context_level = Column(String(20), nullable=True)  # None이면 시스템 기본값 사용
     is_active = Column(Boolean, default=True)
+    email_verified = Column(Boolean, default=False, nullable=False)
+    verification_token = Column(String(255), nullable=True, index=True)
+    verification_token_expires_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

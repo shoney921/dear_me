@@ -1,5 +1,5 @@
-from datetime import timedelta
-from typing import Optional
+import logging
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -10,8 +10,15 @@ from app.core.deps import get_db
 from app.core.security import create_access_token, verify_password, get_password_hash
 from app.core.business_logger import biz_log
 from app.models.user import User
-from app.schemas.auth import Token, LoginRequest
-from app.schemas.user import UserCreate, UserResponse
+from app.schemas.auth import Token, LoginRequest, RegisterResponse, ResendVerificationRequest
+from app.schemas.user import UserCreate
+from app.services.email_service import (
+    create_verification_token,
+    send_verification_email,
+    verify_token,
+)
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -36,6 +43,12 @@ def _authenticate_user(
             detail="Inactive user",
         )
 
+    if not user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email not verified",
+        )
+
     return user
 
 
@@ -48,8 +61,8 @@ def _create_token_response(user: User) -> dict:
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def register(user_in: UserCreate, db: Session = Depends(get_db)) -> User:
+@router.post("/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
+def register(user_in: UserCreate, db: Session = Depends(get_db)):
     """회원가입"""
     # 이메일 중복 체크
     if db.query(User).filter(User.email == user_in.email).first():
@@ -70,13 +83,30 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)) -> User:
         email=user_in.email,
         username=user_in.username,
         hashed_password=get_password_hash(user_in.password),
+        email_verified=False,
     )
     db.add(user)
     db.commit()
     db.refresh(user)
 
     biz_log.user_register(user.username, user.email)
-    return user
+
+    # 인증 이메일 발송
+    token = create_verification_token(user, db)
+    email_sent = send_verification_email(user, token)
+
+    if email_sent:
+        message = "회원가입이 완료되었습니다. 이메일을 확인하여 인증을 완료해주세요."
+    else:
+        message = "회원가입이 완료되었습니다. 인증 이메일 발송에 실패했습니다. 로그인 페이지에서 재발송할 수 있습니다."
+        logger.warning(f"Verification email failed for user {user.email}")
+
+    return RegisterResponse(
+        id=user.id,
+        email=user.email,
+        username=user.username,
+        message=message,
+    )
 
 
 @router.post("/login", response_model=Token)
@@ -93,3 +123,44 @@ def login_json(login_data: LoginRequest, db: Session = Depends(get_db)) -> dict:
     user = _authenticate_user(db, login_data.email, login_data.password)
     biz_log.user_login(user.username)
     return _create_token_response(user)
+
+
+@router.get("/verify-email")
+def verify_email(token: str, db: Session = Depends(get_db)):
+    """이메일 인증 토큰 검증"""
+    user = verify_token(token, db)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification token",
+        )
+    return {"message": "이메일 인증이 완료되었습니다."}
+
+
+@router.post("/resend-verification")
+def resend_verification(
+    data: ResendVerificationRequest, db: Session = Depends(get_db)
+):
+    """인증 이메일 재발송"""
+    # 항상 동일한 응답 (사용자 존재 여부 미노출)
+    success_message = {"message": "인증 이메일이 발송되었습니다. 이메일을 확인해주세요."}
+
+    user = db.query(User).filter(User.email == data.email).first()
+    if not user or user.email_verified:
+        return success_message
+
+    # Rate limit: 5분 이내 재요청 차단
+    if user.verification_token_expires_at:
+        token_created_at = user.verification_token_expires_at - timedelta(
+            hours=settings.VERIFICATION_TOKEN_EXPIRE_HOURS
+        )
+        if datetime.utcnow() - token_created_at < timedelta(minutes=5):
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Please wait before requesting another verification email",
+            )
+
+    token = create_verification_token(user, db)
+    send_verification_email(user, token)
+
+    return success_message
