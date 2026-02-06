@@ -27,6 +27,7 @@ class UserResponse(UserBase):
     profile_image: Optional[str] = None
     rag_context_level: Optional[RagContextLevel] = None
     is_active: bool
+    email_verified: bool = True
     created_at: datetime
 
     class Config:

@@ -29,10 +29,12 @@ export default function RegisterPage() {
 
   const registerMutation = useMutation({
     mutationFn: authService.register,
-    onSuccess: () => {
-      toast.success('회원가입이 완료되었습니다. 로그인해주세요.')
-      // Pass state to indicate this is a new user for quiz redirect
-      navigate('/login', { replace: true, state: { newUser: true } })
+    onSuccess: (data) => {
+      toast.success(data.message)
+      navigate('/login', {
+        replace: true,
+        state: { newUser: true, verificationSent: true, email },
+      })
     },
     onError: (err) => {
       toast.error(getApiErrorMessage(err))

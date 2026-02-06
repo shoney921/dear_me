@@ -22,6 +22,15 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5173",
     ]
 
+    # SMTP (Email Verification)
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_NAME: str = "DearMe"
+    FRONTEND_URL: str = "http://localhost:5173"
+    VERIFICATION_TOKEN_EXPIRE_HOURS: int = 24
+
     # OpenAI
     OPENAI_API_KEY: str = ""
 

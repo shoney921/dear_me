@@ -29,7 +29,7 @@ export function getApiErrorMessage(error: unknown): string {
     case 401:
       return '인증에 실패했습니다. 다시 로그인해주세요.'
     case 403:
-      return '접근 권한이 없습니다.'
+      return translateErrorDetail(detail) || '접근 권한이 없습니다.'
     case 404:
       return '요청한 리소스를 찾을 수 없습니다.'
     case 409:
@@ -84,6 +84,10 @@ function translateErrorDetail(detail: string | Array<{ msg: string }> | undefine
     'You can only chat with persona of your friends': '친구의 페르소나와만 대화할 수 있습니다.',
     'Friend does not have a persona yet': '친구가 아직 페르소나를 생성하지 않았습니다.',
     'Use /personas/me endpoint for your own persona': '내 페르소나는 다른 방법으로 조회해주세요.',
+    // 이메일 인증 관련
+    'Email not verified': '이메일 인증이 필요합니다. 이메일을 확인해주세요.',
+    'Invalid or expired verification token': '인증 링크가 만료되었거나 유효하지 않습니다.',
+    'Please wait before requesting another verification email': '잠시 후 다시 시도해주세요.',
     // 구독 관련
     'Subscription not found': '구독 정보를 찾을 수 없습니다.',
     'Cannot cancel free plan': '무료 플랜은 취소할 수 없습니다.',

@@ -4,6 +4,7 @@ export interface User {
   username: string
   profile_image?: string
   is_active: boolean
+  email_verified: boolean
   created_at: string
 }
 
@@ -21,4 +22,15 @@ export interface RegisterRequest {
 export interface AuthResponse {
   access_token: string
   token_type: string
+}
+
+export interface RegisterResponse {
+  id: number
+  email: string
+  username: string
+  message: string
+}
+
+export interface ResendVerificationRequest {
+  email: string
 }

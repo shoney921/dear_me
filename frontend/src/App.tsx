@@ -20,6 +20,7 @@ import PersonaChatPage from '@/pages/persona/PersonaChatPage'
 import FriendListPage from '@/pages/friend/FriendListPage'
 import NotificationListPage from '@/pages/notification/NotificationListPage'
 import PremiumPage from '@/pages/premium/PremiumPage'
+import VerifyEmailPage from '@/pages/VerifyEmailPage'
 import PrivacyPolicyPage from '@/pages/legal/PrivacyPolicyPage'
 import TermsOfServicePage from '@/pages/legal/TermsOfServicePage'
 import { MentalDashboardPage, BookRecommendationPage, MentalReportPage } from '@/pages/mental'
@@ -59,6 +60,7 @@ function App() {
         path="/register"
         element={isAuthenticated ? <Navigate to="/" replace /> : <RegisterPage />}
       />
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
       <Route path="/privacy" element={<PrivacyPolicyPage />} />
       <Route path="/terms" element={<TermsOfServicePage />} />
 

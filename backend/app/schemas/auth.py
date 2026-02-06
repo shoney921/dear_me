@@ -16,3 +16,14 @@ class TokenPayload(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+
+
+class RegisterResponse(BaseModel):
+    id: int
+    email: str
+    username: str
+    message: str
+
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
