@@ -20,6 +20,7 @@
     --input: 240 5.9% 90%;
     --ring: 239 84% 67%;
     --radius: 0.5rem;
+    --safe-top: env(safe-area-inset-top, 0px);
   }
 
   .dark {
@@ -83,6 +84,10 @@
 /* Safe area padding for iOS */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 /* Mobile menu slide up animation */
