@@ -160,7 +160,7 @@ export default function PersonaChatPage() {
   }
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-8rem)] max-w-2xl flex-col">
+    <div className="mx-auto flex h-[calc(100dvh-8rem-68px)] sm:h-[calc(100dvh-8rem)] max-w-2xl flex-col">
       {/* Header */}
       <div className="flex items-center gap-4 border-b pb-4">
         <Button variant="ghost" size="icon" onClick={() => navigate('/persona')}>
